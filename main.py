@@ -87,7 +87,7 @@ except:
         pass
 
 # Try other means to determinte track title
-
+print(clean_artist(artist),clean_track(track))
 
 
 
