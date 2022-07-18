@@ -81,9 +81,11 @@ def search_tracks_to_find_artist(youtube_title,track):
 
 def did_i_identify_track_correctly(artist,track):
     spotify = spotify_authentication()
+    
+    track = clean_track_for_extraction(track)
 
     # resulting_tracks = search_results['tracks']['items']
-    print("Searching Spotify for {0} by {1}....Please sit tight...".format(track,artist))
+    print("Searching Spotify for {0} ....Please sit tight...".format(clean_track_for_extraction(track)))
     try:
         for offset in range(0, 100, 1):
             search_results = spotify.search(track.strip(),limit=1,offset=offset,type="track")
@@ -95,8 +97,8 @@ def did_i_identify_track_correctly(artist,track):
             if track_artist.lower().strip() == artist.lower().strip():
                 if track_name.lower().strip() == track.lower().strip():
                     time.sleep(3.0)
-                    print("Track was successfully identified as {0} by {1}".format(track,artist))
-                    return track_name, track_id
+                    print("Track was successfully identified as {0} by {1}".format(convert_string(track).strip(),convert_string(artist)).strip())
+                    return convert_string(track_name).strip(), str(track_id).strip()
     except:
         try:
             search_results = spotify.search(track.strip(),limit=1,offset=0,type="track")
@@ -108,8 +110,8 @@ def did_i_identify_track_correctly(artist,track):
             if track_artist.lower().strip() == artist.lower().strip():
                 if track_name.lower().strip() == track.lower().strip():
                     time.sleep(3.0)
-                    print("Track was successfully identified as {0} by {1}".format(track,artist))
-                    return track_name, track_id
+                    print("Track was successfully identified as {0} by {1}".format(convert_string(track),convert_string(artist)))
+                    return convert_string(track_name), str(track_id).strip()
         except:
             print("Spotify can't track an exact song match...")
             return 
@@ -140,7 +142,7 @@ def settle_artist(youtube_artist,creator,channel,uploader):
     if len(variables_list) == 1:
         artist = did_i_identify_artist_correctly(clean_artist(variables_list[0]))
         if artist is not None:
-            return convert_string(artist)
+            return convert_string(artist).split()
         else:
             print("Search Failed. Unable to identify artist using Spotify...")
             print("Testing {} as artist.".format(clean_artist(variables_list[0])))
@@ -151,10 +153,5 @@ def settle_artist(youtube_artist,creator,channel,uploader):
             if artist is None:
                 continue
             else:
-                return convert_string(artist)
-    
-
-    
-    
-    
+                return convert_string(artist).split()
 

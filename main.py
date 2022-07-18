@@ -57,23 +57,24 @@ if artist is None:
 if artist is None:
     artist = convert_string(settle_artist(youtube_information['artist'],youtube_information['creator'],youtube_information['channel'],youtube_information['uploader']))
 
-# Let's test the uploader,creator,channel name etc. for artist info
-if artist is not None:
-   temporary_artist = did_i_identify_artist_correctly(artist)
+    # Let's test the uploader,creator,channel name etc. for artist info
+    if artist is not None:
+        temporary_artist = did_i_identify_artist_correctly(artist)
 
-# If you find it in those information, good! stop
-if temporary_artist is not None:
-    artist = temporary_artist.strip()
-
-# if you don't, let's test the title again for an artist name
-elif temporary_artist is None:
-    temporary_artist = search_tracks_to_find_artist(youtube_video_full_title,clean_track_for_extraction(title_extracted_track))
+try:
+    # If you find it in those information, good! stop
     if temporary_artist is not None:
         artist = temporary_artist.strip()
+    # if you don't, let's test the title again for an artist name
+    elif temporary_artist is None:
+        temporary_artist = search_tracks_to_find_artist(youtube_video_full_title,clean_track_for_extraction(title_extracted_track))
+    
+    if temporary_artist is not None:
+        artist = temporary_artist.strip()
+except NameError:
+    pass
 
 print("Moving on to track identification....")
-
-print(track)
 
 try:
     # Search for track on spotify
@@ -84,16 +85,17 @@ except:
         print("Can't identify track as a variation (eg. remix). Processing track as an original...")
         track,track_id = did_i_identify_track_correctly(artist,clean_track(title_extracted_track))
     except:
-        pass
+        track_id = ""
 
-# Try other means to determinte track title
-print(clean_artist(artist),clean_track(track))
+print(type(track_id))
+print(track_id)
 
-
-
-
+# Clean Track Title and Spotify Titles and check for matches
 
 
+if not track_id:
+    # Try other means to determinte track title
+    print("Do you want to download with no metadata?")
 
-print(artist,track)
+
 
