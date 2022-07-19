@@ -86,11 +86,22 @@ if spotify_track_dict_info is None:
 
 if spotify_track_dict_info is None:
     # Try other means to determinte track title
-    print("Unable to find a match....trying alternatives")
+    print("Unable to find a match....Trying Alternatives")
     if youtube_information['track'] is not None:
         spotify_track_dict_info = search_track_by_youtube_video_title(clean_track(youtube_information['track']))
     else:
         print("Alternatives Methods of Extraction Failed...")
 
+if spotify_track_dict_info is None:
+    print("All methods were unsuccessful at determining the track. Try another video...")
+    sys.exit()
+
+
 print(spotify_track_dict_info)
+print("\n")
+
+artist_genres = get_artist_genres(get_artist_id(artist))
+
+if artist_genres is not None:
+    print(clean_up_genres(artist_genres))
 

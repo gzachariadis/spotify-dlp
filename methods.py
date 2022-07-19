@@ -184,6 +184,8 @@ CLEAR_TRACK = [
 GENRES_DICTIONARY = {
     "edm" : "Electronic Dance Music",
     "dnb" : "Drum and Bass",
+    "hip hop" : "Hip-Hop",
+    "rap" : "Hip-Hop",
     "mpb" : "Latin America Music",
     "r-n-b" : "Rhythm & Blues",
     "r&b"  : "Rhythm & Blues",
@@ -191,6 +193,7 @@ GENRES_DICTIONARY = {
     "ska" : "Jamaican Ska",
     "dub" : "Electronic Reggae",
     "bossanova" : "Samba",
+    "house" : "Progressive House",
     "k-pop" : "Korean Popular Music",
     "j-dance" : "Japanese Dance Music",
     "j-idol" : "Japanese Popular Music",
@@ -232,7 +235,7 @@ GENRES_DICTIONARY = {
     "trip-hop" : "Trip Hop",
     "work-out" : "Garage Hip Hop",
     "world-music" : "Contemporary Folk Music",
-    "pop" : "Traditional Pop",
+    "pop" : "Traditional Pop Music",
     "rockabilly" : "Rock & Roll",
     "sad" : "Indie Rock",
     "sleep" : "Ambient",
@@ -494,3 +497,32 @@ def find_values(id, json_repr):
 
     json.loads(json_repr, object_hook=_decode_dict) # Return value ignored.
     return results
+
+def search_dict(search_parameter,dict):
+    for key in dict.keys():
+        if key == search_parameter:
+            return key, dict[key]
+
+def find_key_for(input_dict, value):    
+    result = []
+    for k, v in input_dict.items():
+        if k in value:
+            result.append(k)
+    return result
+
+def clean_up_genres(genres_list):
+    cleaned_genres = []
+    print(genres_list)
+    for genre in genres_list:
+        search_genres = search_dict(genre, GENRES_DICTIONARY)
+        search_string = genre.split()
+        if search_genres:
+            cleaned_genres.append(search_genres[1])
+
+        for word in search_string:
+            if word in GENRES_DICTIONARY:
+                if search_dict(word, GENRES_DICTIONARY)[1] not in cleaned_genres:
+                    cleaned_genres.append(search_dict(word,GENRES_DICTIONARY)[1])
+            
+
+    return cleaned_genres   

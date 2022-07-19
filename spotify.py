@@ -19,7 +19,7 @@ def spotify_authentication():
                                                redirect_uri=redirect_uri,
                                                cache_path=cache_path))
     spotify.trace = False
-    time.sleep(5.0)
+    time.sleep(10.0)
     return spotify
 
 def did_i_identify_artist_correctly(artist):
@@ -243,3 +243,22 @@ def search_track_with_cleaned_title(track,artist):
         if int(check_song) == int(100):
             song[key] = value
             return song
+
+
+def get_artist_id(artist):
+    spotify = spotify_authentication()
+
+    for offset in range(0,1000,50):
+        results = spotify.search(artist.strip(),limit=50,offset=offset,type="artist")
+        time.sleep(3.0)       
+        for each_artist in results["artists"]["items"]:
+            check_artist = math.trunc(similar(str(each_artist['name']).lower().strip(),str(artist).lower().strip()))
+            if int(check_artist) == int(100):
+                # if track artist matches the artist found previously, give me all their matching records
+                return each_artist['id']
+
+def get_artist_genres(artist_id):
+    spotify = spotify_authentication()
+    results = spotify.artist(artist_id)
+    return results['genres']
+
