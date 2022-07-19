@@ -53,6 +53,7 @@ YOUTUBE_TRACK_FILTER_RULES = [
     r"(?i)\bvod\b", # Word VOD case insenstivie
     r"(?i)(?=^|\b)official\b", # Word Official Case Insensitive
     r"(?i)\blyrics\b", # Word Lyrics Case Insensitive
+    r"(?i)\"{0,}[(]{1,}(?=^|\b)Audio\b\"{0,}[)]{1,}", # Audio In Parenthesis
     r"(?i)\"{0,}(?=^|\b)Audio\b\"{0,}", #  Audio Case Insensitive
     r"(?i)\s{0,1}v{1}s{1,}[.]{0,}\s\s*.\s*(.*)", # Remove everything after vs
     r"(?i)\s{0,1}v{1}[e]{1,}[r]{1,}s{1,}[u]{1,}[s]{1,}[.]{0,}\s\s*.\s*(.*)", # Remove everything after versus
@@ -127,6 +128,7 @@ CLEAR_VIDEO_TITLE = [
     r"((with)?\s*lyrics?( video)?\s*)", # Remove Lyrics, video with etc.
     r"\(\s*(HD|HQ|ᴴᴰ)\s*\)$",  # HD (HQ)
     r"(HD|HQ|ᴴᴰ)\s*$",  # HD (HQ)
+    r"(?i)\"{0,}[(]{1,}(?=^|\b)Audio\b\"{0,}[)]{1,}",
     r"(vid[\u00E9e]o)?\s?clip\sofficiel",  # video clip officiel
     r"of+iziel+es\s*",  # offizielles
     r"vid[\u00E9e]o\s?clip",  # video clip
@@ -140,7 +142,8 @@ CLEAR_VIDEO_TITLE = [
     r"(?i)\bvod\b", # Word VOD case insenstivie
     r"(?i)(?=^|\b)official\b", # Word Official Case Insensitive
     r"(?i)\blyrics\b", # Word Lyrics Case Insensitive
-    r"[.!$%(^$_+~=/}{`\-]{1,}\s{0,}$"
+    r"[.!$%(^$_+~=/}{`\-]{1,}\s{0,}$",
+    r"\s{1,}[.!$%(^$_+~=/}{`\-]{1,}\s{0,}$"
 ]
 
 CLEAR_TRACK = [
@@ -173,6 +176,9 @@ CLEAR_TRACK = [
     r"(ALBUM TRACK\s*)?(album track\s*)",  # (ALBUM TRACK)
     r"(COVER ART\s*)?(Cover Art\s*)",  # (Cover Art)
     r"(?i)\"{0,}(?=^|\b)Audio\b\"{0,}" #  Audio Case Insensitive
+    r"[.!$%(^$_+~=/}{`\-]{1,}\s{0,}$", # Special Characters at the end of string
+    r"\s{1,}[.!$%(^$_+~=/}{`\-]{1,}\s{0,}$" # Spaces + special character at the end of string
+    r"\s{1,}%" # Spaces at the end of string
 ]
 
 GENRES_DICTIONARY = {

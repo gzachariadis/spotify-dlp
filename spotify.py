@@ -1,3 +1,4 @@
+from tabnanny import check
 from turtle import up
 import spotipy
 from spotipy import SpotifyOAuth
@@ -5,6 +6,12 @@ from config import CLIENT_ID, CLIENT_SECRET,redirect_uri, cache_path
 import time
 from methods import *
 import json
+from difflib import SequenceMatcher
+import math
+
+def similar(a, b):
+    return SequenceMatcher(None, a, b).ratio()*100
+
 
 def spotify_authentication():
     spotify = spotipy.Spotify(auth_manager=SpotifyOAuth(client_id=CLIENT_ID,
@@ -155,3 +162,84 @@ def settle_artist(youtube_artist,creator,channel,uploader):
             else:
                 return convert_string(artist).split()
 
+def settle_title(track):
+    spotify = spotify_authentication()
+
+    results = spotify.search(track.strip(),limit=1,offset=0,type="track")
+    full_tracks = []
+    while results:
+        full_tracks.extend(results['tracks']['items'][0])
+        tracks = spotify.next(results['tracks']['items'])  # eventually will be `None` on the final page
+  
+        return tracks
+
+
+def search_track_by_youtube_video_title(track,artist):
+    # Initiate two objects one for songs matching the artist and one for the final result
+    search_results = {}
+    song = {}
+    closely_matching = {}
+    valid = ("y","yes","no","n")
+    negative = ("no","n")
+    # Authenticate token with spotify
+    spotify = spotify_authentication()
+
+    # Seach the first 1000 results for artist + track combo
+    print("Acquiring Tracks....")
+    for offset in range(0, 1000, 50):
+        results = spotify.search(q='artist:' + artist.strip() + ' track:' + track.strip(),limit=50,offset=offset,type = 'track')
+        for each_track in results["tracks"]["items"]:
+            check_artist = math.trunc(similar(str(each_track['artists'][0]['name']).lower().strip(),str(artist).lower().strip()))
+            if int(check_artist) == int(100):
+                # if track artist matches the artist found previously, give me all their matching records
+                search_results[each_track['id']] = each_track['name']
+    
+    for key,value in search_results.items():
+        # check if a song by the artist matches closely the title
+        check_song = math.trunc(similar(str(value).lower().strip(),str(track).lower().strip()))
+    
+        if int(check_song) == int(100):
+            song[key] = value
+            return song 
+        elif int(check_song) > int(75):
+            closely_matching[check_song] = key,value
+    
+    if closely_matching:
+        print("Found {} closely matching songs in Spotify Database...".format(int(len(closely_matching))))
+        for key,value in closely_matching.items():
+            is_your_track = input("is \"{}\" the correct track? [y/n] ".format(value[1]))
+            while is_your_track.lower() not in valid:
+                print("Not a Valid Answer,try again....")
+                is_your_track = input("is \"{}\" the correct track? [y/n] ".format(value[1]))
+            if is_your_track.lower() in negative:
+                continue
+            else:
+                song[value[0]] = value[1]
+                return song
+
+def search_track_with_cleaned_title(track,artist):
+    # Initiate two objects one for songs matching the artist and one for the final result
+    search_results = {}
+    song = {}
+
+    # Authenticate token with spotify
+    spotify = spotify_authentication()
+
+    # Seach the first 1000 results for artist + track combo
+    print("Searching Tracks Now....")
+    for offset in range(0, 1000, 50):
+        results = spotify.search(q='artist:' + artist.strip() + ' track:' + track.strip(),limit=50,offset=offset,type = 'track')
+        for each_track in results["tracks"]["items"]:
+            check_artist = math.trunc(similar(str(each_track['artists'][0]['name']).lower().strip(),str(artist).lower().strip()))
+            if int(check_artist) == int(100):
+                # if track artist matches the artist found previously, give me all their matching records
+                search_results[each_track['id']] = each_track['name']
+    
+    for key,value in search_results.items():
+
+        # check if a song by the artist matches closely the title
+        check_song = math.trunc(similar(str(value).lower().strip(),str(track).lower().strip()))
+    
+        if int(check_song) == int(100):
+            song[key] = value
+            return song

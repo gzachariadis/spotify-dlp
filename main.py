@@ -1,4 +1,5 @@
 # Importing Additional Files
+from textwrap import indent
 from config import CLIENT_ID, CLIENT_SECRET,redirect_uri, cache_path
 from methods import *
 from spotify import *
@@ -76,26 +77,20 @@ except NameError:
 
 print("Moving on to track identification....")
 
-try:
-    # Search for track on spotify
-    track,track_id = did_i_identify_track_correctly(artist,clean_track_for_extraction(title_extracted_track))
-except:
-    try:
-        # if I can't identify the track as a remix then try as a single
-        print("Can't identify track as a variation (eg. remix). Processing track as an original...")
-        track,track_id = did_i_identify_track_correctly(artist,clean_track(title_extracted_track))
-    except:
-        track_id = ""
+print("Processing Track as a potential Remix...")
+spotify_track_dict_info = search_track_by_youtube_video_title(clean_track_for_extraction(title_extracted_track),artist)
 
-print(type(track_id))
-print(track_id)
+if spotify_track_dict_info is None:
+    print("Processing Track as an Original....")
+    spotify_track_dict_info = search_track_with_cleaned_title(clean_track(title_extracted_track),artist)
 
-# Clean Track Title and Spotify Titles and check for matches
-
-
-if not track_id:
+if spotify_track_dict_info is None:
     # Try other means to determinte track title
-    print("Do you want to download with no metadata?")
+    print("Unable to find a match....trying alternatives")
+    if youtube_information['track'] is not None:
+        spotify_track_dict_info = search_track_by_youtube_video_title(clean_track(youtube_information['track']))
+    else:
+        print("Alternatives Methods of Extraction Failed...")
 
-
+print(spotify_track_dict_info)
 
