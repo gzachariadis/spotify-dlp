@@ -123,10 +123,24 @@ print(genre)
 print("\n")
 
 artist_albums = get_artist_albums(get_artist_id(artist))
-print("\n")
 
 artist_singles = get_artist_singles(get_artist_id(artist))
 
-print(json.dumps(get_album_info(artist_albums),indent=4))
+artist_album_information = get_album_info(artist_albums)
 
-# print(get_all_albums_tracks(artist_albums,artist))
+single_album_information = get_album_info(artist_singles)
+
+final_info = get_all_albums_tracks(artist_albums,artist,artist_album_information)
+
+singles_info = get_all_albums_tracks(artist_singles,artist,single_album_information)
+
+
+print("Searching Artist Albums for Song....")
+for key in final_info.keys():
+    if str(key).strip() in spotify_track_dict_info.keys():
+        print(final_info[key])
+        
+print("Searching Single Releases...")
+for key in singles_info:
+    if str(key).strip() in spotify_track_dict_info.keys():
+        print(final_info[key])

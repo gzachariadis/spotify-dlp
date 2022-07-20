@@ -177,7 +177,7 @@ def settle_title(track):
 def search_track_by_youtube_video_title(track,artist):
     # Initiate two objects one for songs matching the artist and one for the final result
     search_results = {}
-    song = {}
+    songs= {}
     closely_matching = {}
     valid = ("y","yes","no","n")
     negative = ("no","n")
@@ -199,8 +199,7 @@ def search_track_by_youtube_video_title(track,artist):
         check_song = math.trunc(similar(str(value).lower().strip(),str(track).lower().strip()))
     
         if int(check_song) == int(100):
-            song[key] = value
-            return song 
+            songs[key] = value
         elif int(check_song) > int(75):
             closely_matching[check_song] = key,value
     
@@ -214,8 +213,8 @@ def search_track_by_youtube_video_title(track,artist):
             if is_your_track.lower() in negative:
                 continue
             else:
-                song[value[0]] = value[1]
-                return song
+                return songs
+    return songs
 
 def search_track_with_cleaned_title(track,artist):
     # Initiate two objects one for songs matching the artist and one for the final result
@@ -291,35 +290,32 @@ def get_artist_singles(artist_id):
 def get_album_info(albums_dictionary):
     album_information = {}
     spotify = spotify_authentication()
-    featuring_artists = []
+
     for key in albums_dictionary.keys():
         album = spotify.album(key)
-
-        for x in album['tracks']['items']:
-            print(x['name'])
-            print(x['track_number'])
-             # Search for featuring artists
-            if len(x['artists']) > 1:
-                check_artist = math.trunc(similar(str(x['name']).lower().strip(),str(artist).lower().strip()))
-                if int(check_artist) != int(100):
-                    print(x['name'])
-                    featuring_artists.append(x['name'])
-
         album_information[album['id']] = album['label'], album['total_tracks'], album['genres'], album['release_date']
         
     return album_information
 
-def get_all_albums_tracks(albums_dictionary,artist):
+
+def get_all_albums_tracks(albums_dictionary,artist,album_info):
     # For each Album in Albums Dictionary look up tracks and create a dictionary
     tracks_dictionary = {}
     spotify = spotify_authentication()
     featuring_artists = []
 
-    print("Searching all album tracks...")
-
     for key, value in albums_dictionary.items():
-        # Search for Album using URI
-        time.sleep(5.0)
+        
+        if key in album_info:
+            the_album_info_values = album_info[key]
+
+         # Identify the date
+        try:
+            the_album_release_date = datetime.strptime(the_album_info_values[3], '%Y-%m-%d').strftime('%Y')
+        except:
+            the_album_release_date = the_album_info_values[3]
+        
+        time.sleep(10.0)
 
         # get album tracks
         album_track_list = spotify.album_tracks(key,limit=50,offset=0)
@@ -332,7 +328,6 @@ def get_all_albums_tracks(albums_dictionary,artist):
                     if int(check_artist) != int(100):
                         featuring_artists.append(x['name'])
             
-            tracks_dictionary[each_track['id']] = key, value[0], value[1], value[2], each_track['name'], each_track['track_number'], set(featuring_artists)
+            tracks_dictionary[each_track['id']] = key, value, the_album_info_values[0], the_album_info_values[1], the_album_info_values[2], the_album_release_date, each_track['name'], each_track['track_number'], set(featuring_artists)
             featuring_artists.clear()
-            
     return tracks_dictionary
