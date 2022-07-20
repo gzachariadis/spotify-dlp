@@ -6,6 +6,9 @@ import os
 import json
 from difflib import SequenceMatcher
 import math
+from collections import Counter
+import operator
+import random
 
 YOUTUBE_TRACK_FILTER_RULES = [
     r"^\W+", # Remove special characters from the beginning of strings
@@ -188,6 +191,7 @@ GENRES_DICTIONARY = {
     "dnb" : "Drum and Bass",
     "alternative rock" : "Alternative Rock", 
     "hip hop" : "Hip-Hop",
+    "dance" : "Electronic Dance Music",
     "eurodance" : "Electronic Dance Music",
     "rap" : "Hip-Hop",
     "speedrun" : "Chill Electronic",
@@ -200,34 +204,44 @@ GENRES_DICTIONARY = {
     "dub" : "Electronic Reggae",
     "electronic" : "Electronic",
     "jump up" : "Drum and Bass",
-    "popwave" : "Pop",
+    "popwave" : "Pop & Dance",
+    "sky room" : "Electronic Dance Music",
     "melbourne bounce international" : "Melbourne Bounce",
     "funk" : "Jazz",
+    "scorecore" : "Soundtracks",
+    "epicore" : "Metal",
+    "funk metal" : "Heavy Metal",
+    "neo mellow" : "",
     "bossanova" : "Samba",
     "house" : "Electro House",
-    "k-pop" : "Korean Popular Music",
-    "j-dance" : "Japanese Dance Music",
-    "j-idol" : "Japanese Popular Music",
-    "j-pop" : "Japanese Popular Music",
-    "j-rock" : "Japanese Rock",
+    "k-pop" : "Pop & Dance",
+    "j-dance" : "Pop & Dance",
+    "j-idol" : "Pop & Dance",
+    "j-pop" : "Pop & Dance",
+    "j-rock" : "Rock",
+    "stomp and holler" : "Chill Synthwave",
     "malay" : "Traditional Malay Music",
-    "mandopop" : "Mandarin Popular Music",
+    "mandopop" : "Pop & Dance",
     "road-trip" : "Soundtrack",
     "classic" : "Classical Music",
-    "philippines-opm" : "Philippines Popular Music",
+    "philippines-opm" : "Pop & Dance",
     "pagode" : "Brazilian Country-Folk",
     "happy" : "Indie Jazz",
-    "future bass" : "Future Bass",
+    "future bass" : "Electonic Dance Music",
     "dubstep" : "Dubstep",
     "complextro" : "Electro house",
     "trap" : "Trap",
     "country" : "Country",
     "traprun" : "Trap",
     "alt z" : "Electronic",
+    "europop" : "Pop & Dance",
+    "urban contemporary" : "Hip-Hop",
     "dark clubbing" : "Electronic",
     "big room" : "Electro House",
     "techno" :  "Techno",
     "g funk" : "Rap",
+    "metal" : "Metal",
+    "folk-pop" : "Pop & Dance",
     "nightrun" : "Melodic Rock",
     "idm" : "Ambient Electronica",
     "indie-pop" : "Indie Electronic",
@@ -245,8 +259,11 @@ GENRES_DICTIONARY = {
     "metal-misc" : "Industrial Metal",
     "minimal-techno" : "Minimal Techno",
     "new-age" : "Artistic New Age",
-    "new-release" : "",
+    "new-release" : "Modern Pop",
+    "chiptune" : "8-Bit",
     "pop-film" : "Art Pop",
+    "video game music" : "Chill Electronic",
+    "nu metal" : "Metal",
     "post-dubstep" : "Post Dubstep",
     "power-pop" : "Pop Rock",
     "progressive-house" : "Electro House",
@@ -254,14 +271,18 @@ GENRES_DICTIONARY = {
     "electropop" : "Electronic Pop",
     "psych-rock" : "Psychedelic Rock",
     "punk-rock" : "Punk Rock",
+    "pop punk" : "Pop-Punk",
     "rainy-day" : "Alternative Rock",
     "show-tunes" : "Traditional Pop",
     "singer-songwriter" : "Folk Accoustic",
     "synth-pop" : "Post Techno Pop",
     "trip-hop" : "Trip Hop",
+    "post-grung" : "Rock",
     "work-out" : "Garage Hip Hop",
     "world-music" : "Contemporary Folk Music",
-    "pop" : "Traditional Pop Music",
+    "pop" : "Modern Pop",
+    "gaming" : "Electronic Pop",
+    "vapor twitch" : "Electonic Dance Music",
     "rockabilly" : "Rock & Roll",
     "sad" : "Indie Rock",
     "native american" : "Country",
@@ -278,7 +299,7 @@ SEPARATORS = [
     ' // ', '-', '–', '—', ':', '|', '///', '/', '&','►'
 ]
 
-ARTIST_SEPERATORS = ["&",",","x"]
+ARTIST_SEPERATORS = ["&",",","x","ft","ft.","featuring","feat.","feat"]
 
 CLEAN_ALBUM_DICTIONARY = [
      r"(?i)\s{1,}(?<!^)[(]{1,}original[)]{1,}\s{0,}$",
@@ -507,6 +528,11 @@ def clean_track(track):
 
     return track
 
+def clean_album_names(album_name):
+    for regex in CLEAN_ALBUM_DICTIONARY:
+        album_name = re.sub(regex, "", album_name, flags=re.IGNORECASE)
+    return album_name
+
 def output_track_info(artist,track):
     if artist is not None:
         if track:
@@ -546,6 +572,16 @@ def similar(a, b):
 def remove_dupls(x):
   return list(dict.fromkeys(x))
 
+def remove_all_on_predicate(predicate, list_):
+    deserving_removal = [elem for elem in list_ if predicate(elem)]
+    for elem in deserving_removal:
+        list_.remove(elem)
+    return None
+
+def select_randomly(x):
+    secure_random = random.SystemRandom()
+    return secure_random.choice(x)
+
 def clean_up_genres(genres_list):
     cleaned_genres = []
     print(genres_list)
@@ -565,6 +601,45 @@ def clean_up_genres(genres_list):
                 if int(check_artist) >= int(80):
                     if value not in cleaned_genres:
                         cleaned_genres.append(value)
+   
+    if cleaned_genres:
+        # Count the values in the dictionary and return max value
+        a = dict(Counter(cleaned_genres))
 
-    mylist = list(dict.fromkeys(cleaned_genres))
-    return remove_dupls(mylist)   
+        print(a)
+
+        if int(max(a.values())) is int(min(a.values())):
+            # Remove Duplicates if still exist 
+            mylist = remove_dupls(cleaned_genres) 
+            
+            # if multiple genres show once and no max value, select one randomly
+            if len(mylist) > 1:
+                genre = str(select_randomly(mylist)).strip()
+                print("Can't determine a dominant genre...Choosing {} from list of artist genres.".format(genre))
+                return genre
+            else:
+                # Return first item of list
+                genre = str(mylist[0]).strip()
+                print("Processed genre as {}.".format(genre).strip())
+                return genre.strip()
+        else:
+            # Find the largest value in the dictionary 
+            new_ma_val = max(a.items(), key=operator.itemgetter(1))[0]
+        
+            # Remove everything that's not max value
+            remove_all_on_predicate(lambda x: new_ma_val not in x, cleaned_genres)
+        
+            # Remove Duplicates if still exist 
+            mylist = remove_dupls(cleaned_genres) 
+            
+            # if multiple genres show once and no max value, select one randomly
+            if len(mylist) > 1:
+                genre = str(select_randomly(mylist)).strip()
+                print("Can't determine a dominant genre...Choosing {} from list of artist genres.".format(genre))
+                return genre
+            else:
+                # Return first item of list
+                genre = str(mylist[0]).strip()
+                print("Processed genre as {}.".format(str(genre)).strip())
+                return genre.strip()
+    return 

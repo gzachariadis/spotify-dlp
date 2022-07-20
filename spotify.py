@@ -1,4 +1,6 @@
+from operator import length_hint
 from tabnanny import check
+from textwrap import indent
 from turtle import up
 import spotipy
 from spotipy import SpotifyOAuth
@@ -9,6 +11,7 @@ import json
 from difflib import SequenceMatcher
 import math
 from methods import *
+from datetime import datetime
 
 def spotify_authentication():
     spotify = spotipy.Spotify(auth_manager=SpotifyOAuth(client_id=CLIENT_ID,
@@ -259,3 +262,77 @@ def get_artist_genres(artist_id):
     results = spotify.artist(artist_id)
     return results['genres']
 
+def get_artist_albums(artist_id):
+    albums_dictionary = {}
+    time.sleep(10.0)
+    spotify = spotify_authentication()
+    
+    # Search for a single artist by name
+    result = spotify.artist_albums(artist_id,album_type='album',limit=50,offset=0)
+    
+    for each_album in result["items"]:
+        albums_dictionary[each_album['id']] = str(each_album['name']).strip()
+    
+    return albums_dictionary
+
+def get_artist_singles(artist_id):
+    singles_dictionary = {}
+    time.sleep(10.0)
+    spotify = spotify_authentication()
+
+    # Search for a single artist by name
+    result = spotify.artist_albums(artist_id,album_type='single',limit=50,offset=0)
+
+    for single in result["items"]:
+        singles_dictionary[single['id']] = str(single['name']).strip()
+    
+    return singles_dictionary
+
+def get_album_info(albums_dictionary):
+    album_information = {}
+    spotify = spotify_authentication()
+    featuring_artists = []
+    for key in albums_dictionary.keys():
+        album = spotify.album(key)
+
+        for x in album['tracks']['items']:
+            print(x['name'])
+            print(x['track_number'])
+             # Search for featuring artists
+            if len(x['artists']) > 1:
+                check_artist = math.trunc(similar(str(x['name']).lower().strip(),str(artist).lower().strip()))
+                if int(check_artist) != int(100):
+                    print(x['name'])
+                    featuring_artists.append(x['name'])
+
+        album_information[album['id']] = album['label'], album['total_tracks'], album['genres'], album['release_date']
+        
+    return album_information
+
+def get_all_albums_tracks(albums_dictionary,artist):
+    # For each Album in Albums Dictionary look up tracks and create a dictionary
+    tracks_dictionary = {}
+    spotify = spotify_authentication()
+    featuring_artists = []
+
+    print("Searching all album tracks...")
+
+    for key, value in albums_dictionary.items():
+        # Search for Album using URI
+        time.sleep(5.0)
+
+        # get album tracks
+        album_track_list = spotify.album_tracks(key,limit=50,offset=0)
+
+        for each_track in album_track_list['items']:            
+            # Search for featuring artists
+            for x in each_track['artists']:
+                if len(each_track['artists']) > 1:
+                    check_artist = math.trunc(similar(str(x['name']).lower().strip(),str(artist).lower().strip()))
+                    if int(check_artist) != int(100):
+                        featuring_artists.append(x['name'])
+            
+            tracks_dictionary[each_track['id']] = key, value[0], value[1], value[2], each_track['name'], each_track['track_number'], set(featuring_artists)
+            featuring_artists.clear()
+            
+    return tracks_dictionary

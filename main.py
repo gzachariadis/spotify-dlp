@@ -1,4 +1,5 @@
 # Importing Additional Files
+from operator import ge
 from textwrap import indent
 from config import CLIENT_ID, CLIENT_SECRET,redirect_uri, cache_path
 from methods import *
@@ -56,7 +57,10 @@ if artist is None:
 
 # if artist from title is not able, use other alternatives
 if artist is None:
-    artist = convert_string(settle_artist(youtube_information['artist'],youtube_information['creator'],youtube_information['channel'],youtube_information['uploader']))
+    artist = settle_artist(youtube_information['artist'],youtube_information['creator'],youtube_information['channel'],youtube_information['uploader'])
+
+    if artist is not None:
+        artist = convert_string(artist)
 
     # Let's test the uploader,creator,channel name etc. for artist info
     if artist is not None:
@@ -75,6 +79,7 @@ try:
 except NameError:
     pass
 
+print("\n")
 print("Moving on to track identification....")
 
 print("Processing Track as a potential Remix...")
@@ -96,12 +101,32 @@ if spotify_track_dict_info is None:
     print("All methods were unsuccessful at determining the track. Try another video...")
     sys.exit()
 
-
 print(spotify_track_dict_info)
+
+genre = ""
+print("\n")
+print("Identifying Track Genre.....")
+
+if youtube_information['genre'] != "NA":
+    genre = youtube_information['genre']
+
+if not genre:
+    print("Youtube Video did not specify Music Genre, trying Spotify database....")
+    artist_genres = get_artist_genres(get_artist_id(artist))
+
+    if artist_genres:
+        genre = clean_up_genres(artist_genres)
+    else:
+        print("Spotify Artist has no Music Genres attached to their profile...")
+
+print(genre)
 print("\n")
 
-artist_genres = get_artist_genres(get_artist_id(artist))
+artist_albums = get_artist_albums(get_artist_id(artist))
+print("\n")
 
-if artist_genres is not None:
-    print(clean_up_genres(artist_genres))
+artist_singles = get_artist_singles(get_artist_id(artist))
 
+print(json.dumps(get_album_info(artist_albums),indent=4))
+
+# print(get_all_albums_tracks(artist_albums,artist))
