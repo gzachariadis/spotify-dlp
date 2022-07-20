@@ -4,6 +4,8 @@ import music_metadata_filter.functions as functions
 import pwd
 import os 
 import json
+from difflib import SequenceMatcher
+import math
 
 YOUTUBE_TRACK_FILTER_RULES = [
     r"^\W+", # Remove special characters from the beginning of strings
@@ -184,16 +186,25 @@ CLEAR_TRACK = [
 GENRES_DICTIONARY = {
     "edm" : "Electronic Dance Music",
     "dnb" : "Drum and Bass",
+    "alternative rock" : "Alternative Rock", 
     "hip hop" : "Hip-Hop",
+    "eurodance" : "Electronic Dance Music",
     "rap" : "Hip-Hop",
+    "speedrun" : "Chill Electronic",
     "mpb" : "Latin America Music",
     "r-n-b" : "Rhythm & Blues",
     "r&b"  : "Rhythm & Blues",
     "rock-n-roll" : "Rock & Roll",
+    "indie pop rap" : "Rap",
     "ska" : "Jamaican Ska",
     "dub" : "Electronic Reggae",
+    "electronic" : "Electronic",
+    "jump up" : "Drum and Bass",
+    "popwave" : "Pop",
+    "melbourne bounce international" : "Melbourne Bounce",
+    "funk" : "Jazz",
     "bossanova" : "Samba",
-    "house" : "Progressive House",
+    "house" : "Electro House",
     "k-pop" : "Korean Popular Music",
     "j-dance" : "Japanese Dance Music",
     "j-idol" : "Japanese Popular Music",
@@ -202,16 +213,29 @@ GENRES_DICTIONARY = {
     "malay" : "Traditional Malay Music",
     "mandopop" : "Mandarin Popular Music",
     "road-trip" : "Soundtrack",
+    "classic" : "Classical Music",
     "philippines-opm" : "Philippines Popular Music",
     "pagode" : "Brazilian Country-Folk",
     "happy" : "Indie Jazz",
+    "future bass" : "Future Bass",
+    "dubstep" : "Dubstep",
+    "complextro" : "Electro house",
+    "trap" : "Trap",
+    "country" : "Country",
+    "traprun" : "Trap",
+    "alt z" : "Electronic",
+    "dark clubbing" : "Electronic",
+    "big room" : "Electro House",
+    "techno" :  "Techno",
+    "g funk" : "Rap",
+    "nightrun" : "Melodic Rock",
     "idm" : "Ambient Electronica",
-    "indie-pop" : "Indie Popular Music",
+    "indie-pop" : "Indie Electronic",
     "alt-rock" : "Alternative Rock",
     "black-metal" : "Black Metal",
-    "chicago-house" : "Chicago House Music",
+    "chicago-house" : "Electro House",
     "death-metal" : "Death Metal",
-    "deep-house" : "Electronic Deep House",
+    "deep-house" : "Electro House",
     "detroit-techno" : "Detroit Techno Music",
     "drum-and-bass" : "Drum & Bass",
     "hard-rock" : "Accoustic Hard Rock",
@@ -225,7 +249,9 @@ GENRES_DICTIONARY = {
     "pop-film" : "Art Pop",
     "post-dubstep" : "Post Dubstep",
     "power-pop" : "Pop Rock",
-    "progressive-house" : "Progressive Electro House",
+    "progressive-house" : "Electro House",
+    "tropical house" : "Electro House",
+    "electropop" : "Electronic Pop",
     "psych-rock" : "Psychedelic Rock",
     "punk-rock" : "Punk Rock",
     "rainy-day" : "Alternative Rock",
@@ -238,8 +264,12 @@ GENRES_DICTIONARY = {
     "pop" : "Traditional Pop Music",
     "rockabilly" : "Rock & Roll",
     "sad" : "Indie Rock",
+    "native american" : "Country",
     "sleep" : "Ambient",
+    "brostep" : "Dubstep",
+    "mellow" : "Drum & Bass",
     "study" : "Classical Music",
+    "tropical" : "Tropical House",
     "summer" : "Vibe Pop"
 }
 
@@ -510,6 +540,12 @@ def find_key_for(input_dict, value):
             result.append(k)
     return result
 
+def similar(a, b):
+    return SequenceMatcher(None, a, b).ratio()*100
+
+def remove_dupls(x):
+  return list(dict.fromkeys(x))
+
 def clean_up_genres(genres_list):
     cleaned_genres = []
     print(genres_list)
@@ -523,6 +559,12 @@ def clean_up_genres(genres_list):
             if word in GENRES_DICTIONARY:
                 if search_dict(word, GENRES_DICTIONARY)[1] not in cleaned_genres:
                     cleaned_genres.append(search_dict(word,GENRES_DICTIONARY)[1])
-            
 
-    return cleaned_genres   
+            for key,value in GENRES_DICTIONARY.items():
+                check_artist = math.trunc(similar(str(word).lower().strip(),str(key).lower().strip()))
+                if int(check_artist) >= int(80):
+                    if value not in cleaned_genres:
+                        cleaned_genres.append(value)
+
+    mylist = list(dict.fromkeys(cleaned_genres))
+    return remove_dupls(mylist)   

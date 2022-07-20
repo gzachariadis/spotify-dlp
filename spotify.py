@@ -8,10 +8,7 @@ from methods import *
 import json
 from difflib import SequenceMatcher
 import math
-
-def similar(a, b):
-    return SequenceMatcher(None, a, b).ratio()*100
-
+from methods import *
 
 def spotify_authentication():
     spotify = spotipy.Spotify(auth_manager=SpotifyOAuth(client_id=CLIENT_ID,
@@ -27,10 +24,10 @@ def did_i_identify_artist_correctly(artist):
 
     resulting_artists = []
     # resulting_tracks = search_results['tracks']['items']
-    print("Searching Spotify for {}....".format(artist))
+    print("Searching Spotify for {}....".format(artist).strip())
     try:
         for offset in range(0, 1000, 50):
-            search_results = spotify.search(artist.strip(),limit=50,offset=offset,type="artist")
+            search_results = spotify.search(str(artist).strip(),limit=50,offset=offset,type="artist")
             time.sleep(2.0)       
             resulting_artists.extend(search_results['artists']['items'])
     except:
