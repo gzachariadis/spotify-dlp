@@ -75,6 +75,7 @@ YOUTUBE_TRACK_FILTER_RULES = [
     r"\s{1,}([1-3][0-9]{3})(\s|$)", #  Remove dates
     r"\s[A-Za-z][.]{1}\s", # Remove Middle names eg. a single letter word [.] dot
     r"^\W+",
+    r"[“]\s{0,}[”]",
     r"(?i)(?<!^)\b[-]\b\s*.\s*(.*)",
     r"^((([a-zA-Z]{1,2})|([0-9]{1,2}))[1-9]?\. )?",  # Remove vinyl track number -https://regex101.com/r/gHh2TB/4
     r"((PREMIERE|INCOMING)\s*:)?", # Remove "PREMIERE: " or "INCOMING: " - https://regex101.com/r/nG16TF/3
@@ -110,6 +111,7 @@ ARTIST_FILTER_RULES = [
     r"\([^()]*\)",
     r"[{}()!@#$]",
     r"\([^()]*\)",
+    r"[“]\s{0,}[”]",
     r"\[[^\]]+\]",
     r"((PREMIERE|INCOMING)\s*:)?", # Remove "PREMIERE: " or "INCOMING: " - https://regex101.com/r/nG16TF/3
     r"(?i)(?<!^)\b[&]\b\s*.\s*(.*)",
@@ -122,13 +124,14 @@ CLEAR_FEATURING_ARTISTS = [
     r"(?i)^\s{0,}vs[.]{0,}\W+\b",
     r"(?i)^\s{0,}[x]{0,}\W+\b",
     r"(?i)\s[A-Za-z]{1}\s",
+    r"[“]\s{0,}[”]",
     r"(?i)^[^α-ωΑ-ΩοόΟοά-ώa-zA-Z0-9\W]+",
     r"(?i)\s[.!$%(^$_+~=/}{`]{1,}\s",
     r"(?i)^\s{0,}[&]{1,}\W+\b",
     r"(?i)^\s{0,}[a]{1,}[n]{1,}[d]{1,}\W+\b"
 ]
 
-CLEAR_VIDEO_TITLE = [
+FIRST_LEVEL = [
     r"\.(avi|wmv|mpg|mpeg|flv|mp3|flac)$", # Remove the file extensions from title
     r"((with)?\s*lyrics?( video)?\s*)", # Remove Lyrics, video with etc.
     r"\(\s*(HD|HQ|ᴴᴰ)\s*\)$",  # HD (HQ)
@@ -138,7 +141,10 @@ CLEAR_VIDEO_TITLE = [
     r"of+iziel+es\s*",  # offizielles
     r"vid[\u00E9e]o\s?clip",  # video clip
     r"\sclip",  # clip
-    r"\s*$", #  remove multiple spaces
+    r"[“]\s{0,}[”]",
+    r"[(]\s{0,}[)]", # Remove Empty Parenthesis with spaces or without
+    r"\s{0,}[“”]\s{0,}",
+    r"\s*$", #  remove multiple spaces from end of string
     r"((PREMIERE|INCOMING)\s*:)?", # Remove "PREMIERE: " or "INCOMING: " - https://regex101.com/r/nG16TF/3
     r"^[^α-ωΑ-ΩοόΟοά-ώa-zA-Z0-9\W]+", # Remove special characters before the start of the string
     r"(?i)\blive\b", #  Word Live case insensitive
@@ -151,7 +157,7 @@ CLEAR_VIDEO_TITLE = [
     r"\s{1,}[.!$%(^$_+~=/}{`\-]{1,}\s{0,}$"
 ]
 
-CLEAR_TRACK = [
+SECOND_LEVEL = [
     r"\.(avi|wmv|mpg|mpeg|flv|mp3|flac)$", # Remove the file extensions from title
     r"((with)?\s*lyrics?( video)?\s*)", # Remove Lyrics, video with etc.
     r"\(\s*(HD|HQ|ᴴᴰ)\s*\)$",  # HD (HQ)
@@ -326,9 +332,13 @@ CLEAN_ALBUM_DICTIONARY = [
 Escape_Words = ["the","and","are","is","was","were","by","of","no","so"]
 
 def clean_track_for_extraction(my_str):
-    for regex in CLEAR_TRACK:
+    my_str = re.sub("(?=[a-zA-Z])Audio(?=[a-zA-Z])", " ",my_str, flags=re.IGNORECASE)
+    
+    for regex in SECOND_LEVEL:
         my_str = re.sub(regex, "", my_str, flags=re.IGNORECASE)
     
+    my_str = re.sub(r"\s\s+" , " ", my_str)
+ 
     find_paren = set(find(my_str,"("))
 
     if find_paren is not None:
@@ -337,7 +347,22 @@ def clean_track_for_extraction(my_str):
             replacement = re.sub(r"[^\w.\s]",'', my_str[start:], flags=re.IGNORECASE)
             my_str = my_str[:start] + "- " + convert_string(replacement)
 
+    my_str = re.sub(r"\s{2,}", " ", my_str)
+
     return my_str
+
+def clean_track_for_extraction_vol2(my_str):
+    my_str = re.sub("(?=[a-zA-Z])Audio(?=[a-zA-Z])", " ",my_str, flags=re.IGNORECASE)
+    
+    for regex in SECOND_LEVEL:
+        my_str = re.sub(regex, "", my_str, flags=re.IGNORECASE)
+    
+    my_str = re.sub(r"\s\s+" , " ", my_str)
+    my_str = re.sub(r"\s{2,}", " ", my_str)
+
+    return my_str
+
+
 
 def find(str, ch):
     for i, ltr in enumerate(str):
@@ -345,8 +370,9 @@ def find(str, ch):
             yield i
 
 def clear_title(title):
-    for regex in CLEAR_VIDEO_TITLE:
+    for regex in FIRST_LEVEL:
         title = re.sub(regex, "", title, flags=re.IGNORECASE)
+    
     
     return title
 
@@ -643,3 +669,19 @@ def clean_up_genres(genres_list):
                 print("Processed genre as {}.".format(str(genre)).strip())
                 return genre.strip()
     return 
+
+
+def return_yt_info(final_info,single_info,spotify_track_dict_info):
+    print("Searching Artist Albums for Song....")
+    for key in final_info.keys():
+        if str(key).strip() in spotify_track_dict_info.keys():
+            yt_dlp_info = final_info[key]
+            return yt_dlp_info
+
+    print("Song is not part of any artist album...")
+    print("Searching Artist Singles for Song...")       
+    for key in single_info.keys():
+        if str(key).strip() in spotify_track_dict_info.keys():
+            yt_dlp_singles_info = single_info[key]
+            return yt_dlp_singles_info
+    

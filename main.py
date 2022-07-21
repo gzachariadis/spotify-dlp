@@ -18,10 +18,16 @@ youtube_information = json.loads(f)
 # Set the youtube video title to variable
 youtube_video_full_title = youtube_information['fulltitle']
 
+print("Video title identified as {}.".format(youtube_video_full_title).strip())
+
 # Remove Things that might mess with identification
 youtube_video_full_title = deEmojify(youtube_video_full_title)
 youtube_video_full_title = clear_title(youtube_video_full_title)
 youtube_video_full_title = re.sub(r"[\%\/\\\&\?\,\'\;\:\!\-\:\)]{2,}", '', youtube_video_full_title)
+youtube_video_full_title = re.sub(r"\s{2,}", " ", youtube_video_full_title)
+
+print("Cleaned title a bit for processing...")
+print("New Title {}".format(youtube_video_full_title))
 
 # Find all seperator objects
 the_seperator_object = find_separator(youtube_video_full_title)
@@ -30,6 +36,7 @@ the_seperator_index = find_correct_seperator_index(the_seperator_object)
 
 # Cut the youtube video title to two pieces, one for artist and one for song title using the seperator
 title_extracted_track, title_extracted_artist = youtube_video_full_title[the_seperator_index:], youtube_video_full_title[:the_seperator_index]
+
 
 # Clean the artist and title to begin spotify searches
 artist = clean_artist(title_extracted_artist)
@@ -83,6 +90,7 @@ print("\n")
 print("Moving on to track identification....")
 
 print("Processing Track as a potential Remix...")
+
 spotify_track_dict_info = search_track_by_youtube_video_title(clean_track_for_extraction(title_extracted_track),artist)
 
 if spotify_track_dict_info is None:
@@ -132,15 +140,24 @@ single_album_information = get_album_info(artist_singles)
 
 final_info = get_all_albums_tracks(artist_albums,artist,artist_album_information)
 
-singles_info = get_all_albums_tracks(artist_singles,artist,single_album_information)
+single_info = get_all_albums_tracks(artist_singles,artist,single_album_information)
 
-
-print("Searching Artist Albums for Song....")
+"""
 for key in final_info.keys():
-    if str(key).strip() in spotify_track_dict_info.keys():
-        print(final_info[key])
-        
-print("Searching Single Releases...")
-for key in singles_info:
-    if str(key).strip() in spotify_track_dict_info.keys():
-        print(final_info[key])
+    print(key)
+
+for key in single_info.keys():
+    print(key)
+
+"""
+
+yt_dlp_info = return_yt_info(final_info,single_info,spotify_track_dict_info)
+# print(len(spotify_track_dict_info.keys()))
+
+try:
+    print(yt_dlp_info)
+except NameError:
+    for key in spotify_track_dict_info.keys():
+        get_track_by_id(key,artist)
+
+

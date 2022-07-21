@@ -12,6 +12,7 @@ from difflib import SequenceMatcher
 import math
 from methods import *
 from datetime import datetime
+import pyinputplus as pyip
 
 def spotify_authentication():
     spotify = spotipy.Spotify(auth_manager=SpotifyOAuth(client_id=CLIENT_ID,
@@ -177,44 +178,72 @@ def settle_title(track):
 def search_track_by_youtube_video_title(track,artist):
     # Initiate two objects one for songs matching the artist and one for the final result
     search_results = {}
-    songs= {}
+    song = {}
     closely_matching = {}
-    valid = ("y","yes","no","n")
-    negative = ("no","n")
     # Authenticate token with spotify
     spotify = spotify_authentication()
 
     # Seach the first 1000 results for artist + track combo
     print("Acquiring Tracks....")
     for offset in range(0, 1000, 50):
-        results = spotify.search(q='artist:' + artist.strip() + ' track:' + track.strip(),limit=50,offset=offset,type = 'track')
+        results = spotify.search(q='artist:' + artist.strip() + ' track:' + str(track).strip(),limit=50,offset=offset,type = 'track')
         for each_track in results["tracks"]["items"]:
             check_artist = math.trunc(similar(str(each_track['artists'][0]['name']).lower().strip(),str(artist).lower().strip()))
             if int(check_artist) == int(100):
                 # if track artist matches the artist found previously, give me all their matching records
-                search_results[each_track['id']] = each_track['name']
+                search_results[each_track['id']] = each_track['name'], each_track['artists'][0]['name']
     
+    print("Searching for {}....".format(track).strip())
+    # if artist matches the artist I am looking for, look at results
     for key,value in search_results.items():
         # check if a song by the artist matches closely the title
-        check_song = math.trunc(similar(str(value).lower().strip(),str(track).lower().strip()))
-    
+        check_song = math.trunc(similar(str(value[0]).lower().strip(),str(track).lower().strip()))
+
+        # if you find an exact match
         if int(check_song) == int(100):
-            songs[key] = value
-        elif int(check_song) > int(75):
-            closely_matching[check_song] = key,value
+            song[key] = value[0]
     
-    if closely_matching:
-        print("Found {} closely matching songs in Spotify Database...".format(int(len(closely_matching))))
-        for key,value in closely_matching.items():
-            is_your_track = input("is \"{}\" the correct track? [y/n] ".format(value[1]))
-            while is_your_track.lower() not in valid:
-                print("Not a Valid Answer,try again....")
-                is_your_track = input("is \"{}\" the correct track? [y/n] ".format(value[1]))
-            if is_your_track.lower() in negative:
+    # if you find exactly one song matching return song
+    if len(song.keys()) == 1:
+        print("Found Exact Song Match!")
+        return song
+
+    # if you find multiple matches return all of them
+    if len(song.keys()) > 1:
+        print("Found {} exact song matches in Spotify Database....".format(len(song.keys())))
+        return song    
+
+    # if you don't find an exact match
+    if(len(song.keys())) == 0:
+        print("No exact song matches found in Spotify Database, searching for close variations...") 
+        # search Spoitfy again, but this time only for song that match artist name
+        for key,value in search_results.items():
+            # check if a song by the artist matches closely the title
+            check_song = math.trunc(similar(str(value).lower().strip(),str(track).lower().strip()))
+
+            # if matches more than 70 
+            if int(check_song) > int(70):
+                # put to closely matching
+                closely_matching[key] = value[0], value[1]
+
+    # if you find exactly one closely matching track, return it
+    if len(closely_matching.keys()) == 0:
+        return
+    
+    elif len(closely_matching.keys()) >= 1:
+        print("Found {} closely matching tracks in the Spotify Database...".format(len(closely_matching.keys())))
+        for key, value in closely_matching.items():
+
+            is_this_your_track = pyip.inputYesNo(prompt=(str("is \"{0}\" by {1} the correct track? [y/n] ".format(value[0],value[1]))),strip=True,default="yes",blank=True)
+            
+            if not is_this_your_track or (str(is_this_your_track).lower() == "yes"):
+                song[key] = value[0], value[1]
+                return song
+            # if        
+            elif str(is_this_your_track).lower() == "no":
                 continue
-            else:
-                return songs
-    return songs
+        
+    return 
 
 def search_track_with_cleaned_title(track,artist):
     # Initiate two objects one for songs matching the artist and one for the final result
@@ -225,9 +254,9 @@ def search_track_with_cleaned_title(track,artist):
     spotify = spotify_authentication()
 
     # Seach the first 1000 results for artist + track combo
-    print("Searching Tracks Now....")
+    print("Searching Spotify for {}...".format(str(track).strip()))
     for offset in range(0, 1000, 50):
-        results = spotify.search(q='artist:' + artist.strip() + ' track:' + track.strip(),limit=50,offset=offset,type = 'track')
+        results = spotify.search(q='artist:' + str(artist).strip() + ' track:' + str(track).strip(),limit=50,offset=offset,type = 'track')
         for each_track in results["tracks"]["items"]:
             check_artist = math.trunc(similar(str(each_track['artists'][0]['name']).lower().strip(),str(artist).lower().strip()))
             if int(check_artist) == int(100):
@@ -290,7 +319,7 @@ def get_artist_singles(artist_id):
 def get_album_info(albums_dictionary):
     album_information = {}
     spotify = spotify_authentication()
-
+    featuring_artists = []
     for key in albums_dictionary.keys():
         album = spotify.album(key)
         album_information[album['id']] = album['label'], album['total_tracks'], album['genres'], album['release_date']
@@ -309,14 +338,12 @@ def get_all_albums_tracks(albums_dictionary,artist,album_info):
         if key in album_info:
             the_album_info_values = album_info[key]
 
-         # Identify the date
+        # Identify the date
         try:
             the_album_release_date = datetime.strptime(the_album_info_values[3], '%Y-%m-%d').strftime('%Y')
         except:
             the_album_release_date = the_album_info_values[3]
         
-        time.sleep(10.0)
-
         # get album tracks
         album_track_list = spotify.album_tracks(key,limit=50,offset=0)
 
@@ -331,3 +358,44 @@ def get_all_albums_tracks(albums_dictionary,artist,album_info):
             tracks_dictionary[each_track['id']] = key, value, the_album_info_values[0], the_album_info_values[1], the_album_info_values[2], the_album_release_date, each_track['name'], each_track['track_number'], set(featuring_artists)
             featuring_artists.clear()
     return tracks_dictionary
+
+def get_track_by_id(track_id,artist):
+    track = {}
+    spotify = spotify_authentication()
+    featuring_artists = []
+    results = spotify.track(track_id)
+    album_type = ""
+
+    """
+    print(results['name'])
+    print(clean_track(results['name']))
+    print(clean_track_for_extraction(results['name']))
+
+    print(results['track_number'])
+    print(results['album']['album_type'])
+    print(results['album']['release_date'])
+    """
+
+    check_album_compilation = math.trunc(similar(str(results['album']['album_type']).lower().strip(),str("compilation").lower().strip()))
+    check_album_single = math.trunc(similar(str(results['album']['album_type']).lower().strip(),str("single").lower().strip()))
+
+    if int(check_album_compilation) == int(100) or int(check_album_single) == int(100):
+        album_type = "Single"
+
+    # Identify the date
+    try:
+        the_album_release_date = datetime.strptime(results['album']['release_date'], '%Y-%m-%d').strftime('%Y')
+    except:
+        the_album_release_date = results['album']['release_date']
+
+  
+    for x in results['artists']:
+        if len(results['artists']) > 1:
+            check_artist = math.trunc(similar(str(x['name']).lower().strip(),str(artist).lower().strip()))
+            if int(check_artist) != int(100):
+                featuring_artists.append(x['name'])
+    
+    track[results['id']] =  clean_track(results['name']), the_album_release_date, set(featuring_artists), album_type
+    featuring_artists.clear()
+
+    print(track)
