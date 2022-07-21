@@ -154,6 +154,7 @@ FIRST_LEVEL = [
     r"(?i)(?=^|\b)official\b", # Word Official Case Insensitive
     r"(?i)\blyrics\b", # Word Lyrics Case Insensitive
     r"[.!$%(^$_+~=/}{`\-]{1,}\s{0,}$",
+    r"[(]\s{0,}[)]", #  parenthesis
     r"\s{1,}[.!$%(^$_+~=/}{`\-]{1,}\s{0,}$"
 ]
 
@@ -329,7 +330,7 @@ CLEAN_ALBUM_DICTIONARY = [
      r"[\\.,;:\()-_]+$"
 ]
 
-Escape_Words = ["the","and","are","is","was","were","by","of","no","so"]
+Escape_Words = ["the","and","are","is","was","were","by","of","no","so","with","be","to"]
 
 def clean_track_for_extraction(my_str):
     my_str = re.sub("(?=[a-zA-Z])Audio(?=[a-zA-Z])", " ",my_str, flags=re.IGNORECASE)
@@ -610,7 +611,6 @@ def select_randomly(x):
 
 def clean_up_genres(genres_list):
     cleaned_genres = []
-    print(genres_list)
     for genre in genres_list:
         search_genres = search_dict(genre, GENRES_DICTIONARY)
         search_string = genre.split()
@@ -632,45 +632,30 @@ def clean_up_genres(genres_list):
         # Count the values in the dictionary and return max value
         a = dict(Counter(cleaned_genres))
 
-        print(a)
+        # Find item with Max Value in Dictionary
+        itemMaxValue = max(a.items(), key=lambda x: x[1])
+        listOfKeys = list()
+        # Iterate over all the items in dictionary to find keys with max value
+        for key, value in a.items():
+            if value == itemMaxValue[1]:
+                listOfKeys.append(key)
 
-        if int(max(a.values())) is int(min(a.values())):
-            # Remove Duplicates if still exist 
-            mylist = remove_dupls(cleaned_genres) 
-            
-            # if multiple genres show once and no max value, select one randomly
-            if len(mylist) > 1:
-                genre = str(select_randomly(mylist)).strip()
-                print("Can't determine a dominant genre...Choosing {} from list of artist genres.".format(genre))
-                return genre
-            else:
-                # Return first item of list
-                genre = str(mylist[0]).strip()
-                print("Processed genre as {}.".format(genre).strip())
-                return genre.strip()
-        else:
-            # Find the largest value in the dictionary 
-            new_ma_val = max(a.items(), key=operator.itemgetter(1))[0]
+        if len(listOfKeys) == 0:
+            print("Can't determine genre...")
+            return 
+
+        elif len(listOfKeys) == 1:
+            genre = str(listOfKeys[0])
+            print("Processed genre as {}.".format(genre).strip())
+            return genre
+
+        elif len(listOfKeys) > 1:
+            genre = str(select_randomly(listOfKeys)).strip()
+            print("Keeping {} from list of artist genres as backup track genre.".format(genre))
+            return genre
+    else:
+        return
         
-            # Remove everything that's not max value
-            remove_all_on_predicate(lambda x: new_ma_val not in x, cleaned_genres)
-        
-            # Remove Duplicates if still exist 
-            mylist = remove_dupls(cleaned_genres) 
-            
-            # if multiple genres show once and no max value, select one randomly
-            if len(mylist) > 1:
-                genre = str(select_randomly(mylist)).strip()
-                print("Can't determine a dominant genre...Choosing {} from list of artist genres.".format(genre))
-                return genre
-            else:
-                # Return first item of list
-                genre = str(mylist[0]).strip()
-                print("Processed genre as {}.".format(str(genre)).strip())
-                return genre.strip()
-    return 
-
-
 def return_yt_info(final_info,single_info,spotify_track_dict_info):
     print("Searching Artist Albums for Song....")
     for key in final_info.keys():
@@ -678,10 +663,43 @@ def return_yt_info(final_info,single_info,spotify_track_dict_info):
             yt_dlp_info = final_info[key]
             return yt_dlp_info
 
-    print("Song is not part of any artist album...")
-    print("Searching Artist Singles for Song...")       
-    for key in single_info.keys():
+    print("Song is not part of Artist Albums...")
+    print("Searching Artist's EPs....")  
+    for key,value in single_info.items():
         if str(key).strip() in spotify_track_dict_info.keys():
             yt_dlp_singles_info = single_info[key]
             return yt_dlp_singles_info
+
+    print("Song was not found in Artist's EPs....")
+    return 
+
+def test_album_names(artist_albums,value_to_check):
+    for key,value in artist_albums.items():
+        check_value = math.trunc(similar(str(value_to_check).lower().strip(),str(value).lower().strip()))
+        if int(check_value) == int(100):
+            return value_to_check
+    return 
+
+
+
+RECORD_LABEL_RULES = [
+    r"\s*$", #  remove multiple spaces
+]
+
+def format_record_label(record_label):
+    for x in RECORD_LABEL_RULES:
+        record_label = re.sub(x, "", record_label, flags=re.IGNORECASE)
     
+    record_label = record_label.split()
+
+    for index, word in enumerate(record_label):
+        print(word)
+        if len(word) <= int(2):
+            record_label[index] = word.upper()
+    
+    print("This is seperator object {}".format(find_separator(record_label)))
+
+    record_label = ' '.join(record_label)
+    
+    return record_label
+

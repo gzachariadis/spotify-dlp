@@ -1,0 +1,4 @@
+--ppa \"EmbedThumbnail+ffmpeg_o:-c:v mjpeg -vf crop=\"'if(gt(ih,iw),iw,ih)':'if(gt(iw,ih),ih,iw)'\"\"
+--convert-thumbnails jpg --ppa "ThumbnailsConvertor:-q:v 1"
+--convert-thumbnail jpg --exec-before-download \"ffmpeg -i %(thumbnails.-1.filepath)q -vf crop=\"'if(gt(ih,iw),iw,ih)':'if(gt(iw,ih),ih,iw)'\" _%(thumbnails.-1.filepath)q\" --exec-before-download \"rm %(thumbnails.-1.filepath)q\" --exec-before-download \"mv _%(thumbnails.-1.filepath)q %(thumbnails.-1.filepath)q\"
+

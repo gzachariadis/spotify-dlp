@@ -40,13 +40,11 @@ def did_i_identify_artist_correctly(artist):
     artists_found = find_values("name",json.dumps(resulting_artists))
 
     if artist.strip() in artists_found:
-        print("Artist was identified correctly as {}".format(artist.strip()))
-        return artist
+        return str(convert_string(artist)).strip()
     else:
         for i in artists_found:
             if i.lower() == artist.lower():
-                print("Artist was identified correctly as {}".format(artist.strip()))
-                return artist
+                return str(convert_string(artist)).strip()
     return 
 
 def search_tracks_to_find_artist(youtube_title,track):
@@ -205,7 +203,7 @@ def search_track_by_youtube_video_title(track,artist):
     
     # if you find exactly one song matching return song
     if len(song.keys()) == 1:
-        print("Found Exact Song Match!")
+        print("Song Identified...")
         return song
 
     # if you find multiple matches return all of them
@@ -238,8 +236,8 @@ def search_track_by_youtube_video_title(track,artist):
             
             if not is_this_your_track or (str(is_this_your_track).lower() == "yes"):
                 song[key] = value[0], value[1]
+                print("Validated song as {0} by {1}. Proceeding...".format(str(value[0]).strip(),str(artist)).strip())
                 return song
-            # if        
             elif str(is_this_your_track).lower() == "no":
                 continue
         
@@ -319,7 +317,6 @@ def get_artist_singles(artist_id):
 def get_album_info(albums_dictionary):
     album_information = {}
     spotify = spotify_authentication()
-    featuring_artists = []
     for key in albums_dictionary.keys():
         album = spotify.album(key)
         album_information[album['id']] = album['label'], album['total_tracks'], album['genres'], album['release_date']
@@ -366,15 +363,7 @@ def get_track_by_id(track_id,artist):
     results = spotify.track(track_id)
     album_type = ""
 
-    """
-    print(results['name'])
-    print(clean_track(results['name']))
-    print(clean_track_for_extraction(results['name']))
-
-    print(results['track_number'])
-    print(results['album']['album_type'])
-    print(results['album']['release_date'])
-    """
+    print("This is the album id : {}".format(results['album']['id']))
 
     check_album_compilation = math.trunc(similar(str(results['album']['album_type']).lower().strip(),str("compilation").lower().strip()))
     check_album_single = math.trunc(similar(str(results['album']['album_type']).lower().strip(),str("single").lower().strip()))
@@ -388,7 +377,6 @@ def get_track_by_id(track_id,artist):
     except:
         the_album_release_date = results['album']['release_date']
 
-  
     for x in results['artists']:
         if len(results['artists']) > 1:
             check_artist = math.trunc(similar(str(x['name']).lower().strip(),str(artist).lower().strip()))
@@ -398,4 +386,4 @@ def get_track_by_id(track_id,artist):
     track[results['id']] =  clean_track(results['name']), the_album_release_date, set(featuring_artists), album_type
     featuring_artists.clear()
 
-    print(track)
+    return track
