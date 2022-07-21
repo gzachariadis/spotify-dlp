@@ -166,6 +166,7 @@ if yt_dlp_info is not None:
             track_number = int(yt_dlp_info[7])
             featuring_artists = ', '.join(list(yt_dlp_info[8]))
 
+            print("\n")
             print("Album : {}".format(album_name))
             print("Formatted Record Label : {}".format(format_record_label(convert_string(str(yt_dlp_info[2])))))
             print("Recording Label : {}".format(album_label))
@@ -185,6 +186,7 @@ if yt_dlp_info is not None:
             track_name = convert_string(str(yt_dlp_info[6]))
             featuring_artists = ', '.join(list(yt_dlp_info[8]))
             
+            print("\n")
             print("Formatted Record Label : {}".format(format_record_label(convert_string(str(yt_dlp_info[2])))))
             print("Recording Label : {}".format(album_label))
             print("Genre : {}".format(album_genre))
@@ -198,9 +200,13 @@ else:
         yt_dlp_singles_info = get_track_by_id(key,artist)
     
     for key,value in yt_dlp_singles_info.items():
-        print(yt_dlp_singles_info)
-        print(convert_string(value[0]))
+        print("\n")
+        print("Track : {}".format(convert_string(value[0])))
+        print("Track Variable : {}".format(track))
         print("Release Date : {}".format(value[1]))
         print("Featuring Artists : {}".format(', '.join(list(value[2]))))
-        print(value[3])
+        print("Track Type : {}".format(value[3]))
+        print("Album Genre : {}".format(value[4]))
         print("Artist Genre : {}".format(genre))
+        print("Record Label : {}".format(value[5]))
+

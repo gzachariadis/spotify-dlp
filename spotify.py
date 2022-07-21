@@ -356,6 +356,21 @@ def get_all_albums_tracks(albums_dictionary,artist,album_info):
             featuring_artists.clear()
     return tracks_dictionary
 
+def get_single_album_info(album_id):
+    album_info_object = {}
+    spotify = spotify_authentication()
+
+    album = spotify.album(album_id)
+    
+    # Identify the date
+    try:
+        the_album_release_date = datetime.strptime(album['release_date'], '%Y-%m-%d').strftime('%Y')
+    except:
+        the_album_release_date = album['release_date']
+
+    album_info_object[album_id] = album['genres'], album['label'], the_album_release_date
+    return album_info_object 
+
 def get_track_by_id(track_id,artist):
     track = {}
     spotify = spotify_authentication()
@@ -363,8 +378,11 @@ def get_track_by_id(track_id,artist):
     results = spotify.track(track_id)
     album_type = ""
 
-    print("This is the album id : {}".format(results['album']['id']))
+    album_info = get_single_album_info(format(results['album']['id']))
 
+    album_extracted_genre = album_info[list(album_info.keys())[0]][0]
+    album_extracted_label = album_info[list(album_info.keys())[0]][1]
+    
     check_album_compilation = math.trunc(similar(str(results['album']['album_type']).lower().strip(),str("compilation").lower().strip()))
     check_album_single = math.trunc(similar(str(results['album']['album_type']).lower().strip(),str("single").lower().strip()))
 
@@ -383,7 +401,7 @@ def get_track_by_id(track_id,artist):
             if int(check_artist) != int(100):
                 featuring_artists.append(x['name'])
     
-    track[results['id']] =  clean_track(results['name']), the_album_release_date, set(featuring_artists), album_type
+    track[results['id']] =  clean_track(results['name']), the_album_release_date, set(featuring_artists), album_type, album_extracted_genre, album_extracted_label
     featuring_artists.clear()
 
     return track
