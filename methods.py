@@ -1,4 +1,5 @@
 from __future__ import print_function
+from calendar import c
 import re
 import music_metadata_filter.functions as functions
 import pwd
@@ -103,6 +104,7 @@ ARTIST_FILTER_RULES = [
     r"\((.*)\)",
     r"\[.*?\]",
     r"^\W+",
+    r"\s{1,}$",
     r"(?i)\bft\b\s*.\s*(.*)",
     r"(?i)\s&{1}\s\s*.\s*(.*)",
     r"(?i)\s{0,1},{1}\s\s*.\s*(.*)",
@@ -330,6 +332,226 @@ CLEAN_ALBUM_DICTIONARY = [
      r"[\\.,;:\()-_]+$"
 ]
 
+CLEAN_BRACKETS = [
+    r"(?i)\[{1,}\s{0,}(?:Official)?\s{0,}(?:Music)?\s{0,}Video\]{1,}", # Official Music Video 
+
+]
+
+def clean_brackets(track):
+    for regex in CLEAN_BRACKETS:
+        track = re.sub(regex, "", track, flags=re.IGNORECASE)
+    
+    return track
+
+
+CLEAN_EXTRAS = [
+    r"(?i)\s{1,}(?<!^)[(]{1,}Mixed by.*[)]{1,}\s{0,}$",
+    r"(?i)\s{1,}(?<!^)[(]{1,}Presented by.*[)]{1,}\s{0,}$",
+    r"(?i)\s{1,}(?<!^)[(]{1,}Dj Mix.*[)]{1,}\s{0,}$",
+    r"(?i)\s{1,}(?<!^)[(]{1,}Live at.*[)]{1,}\s{0,}$",
+    r"(?i)(?<!^)(Live at.*)$",
+    r"(?i)(?<!^)\[[^()]*\]$",
+    r"(?i)(?<!^)(Mixed by.*)$",
+    r"(?i)(?<!^)(Live In.*)$",
+    r"(?i)\s{1,}(?<!^)[(]{1,}Continuous Dj Mix.*[)]{1,}\s{0,}$",
+    r"(?i)\s{1,}(?<!^)[(]{1,}Live*[)]{1,}\s{0,}$",
+    r"\,(?=\s{1,}\bPt\b)",
+    r"\,(?=\s{1,}\bVol\b)",
+    r"\,(?=\s{1,}\bVolume\b)",
+    r"\,(?=\s{1,}\bPts\b)",
+    r"\.(avi|wmv|mpg|mpeg|flv|mp3|flac)$", # Remove the file extensions from title
+    r"((with)?\s*lyrics?( video)?\s*)", # Remove Lyrics, video with etc.
+    r"\(\s*(HD|HQ|ᴴᴰ)\s*\)$",  # HD (HQ)
+    r"((with)?\s*lyrics?( video)?\s*)", # Remove Lyrics, video with etc.
+    r"(HD|HQ|ᴴᴰ)\s*$",  # HD (HQ)
+    r"(vid[\u00E9e]o)?\s?clip\sofficiel",  # video clip officiel
+    r"of+iziel+es\s*",  # offizielles
+    r"vid[\u00E9e]o\s?clip",  # video clip
+    r"\sclip",  # clip
+    r"((PREMIERE|INCOMING)\s*:)?", # Remove "PREMIERE: " or "INCOMING: " - https://regex101.com/r/nG16TF/3
+    r"(Official Track Stream*)", #  Official Track Stream
+    r"(of+icial\s*)?(music\s*)?video",  # (official)? (music)? video
+    r"(of+icial\s*)?(music\s*)?audio",  # (official)? (music)? audio
+    r"(ALBUM TRACK\s*)?(album track\s*)",  # (ALBUM TRACK)
+    r"(COVER ART\s*)?(Cover Art\s*)",  # (Cover Art)
+    r"(?i)\"{0,}(?=^|\b)Audio\b\"{0,}" #  Audio Case Insensitive
+]
+
+def clean_extra_from_title(track):
+    for regex in CLEAN_EXTRAS:
+        track = re.sub(regex, "", track, flags=re.IGNORECASE)
+    
+    return track
+
+CLEAN_PARENTHESIS = [
+    r"(?i)(?<!^)[(]{1,}Official\s{0,}(?:Music)?\s{0,}Video[)]{1,}",
+    r"(?i)(?<!^)[(]{1,}Official\s{0,}(?:Music)?\s{0,}Visualizer[)]{1,}",
+    r"(?i)(?<!^)[(]{1,}(?:Music)?\s{0,}Visualizer[)]{1,}",
+    r"(?i)(?<!^)[(]{1,}(?:Audio)?\s{0,}?\s{0,}(?:With)?\s{0,}?\s{0,}Lyrics\s{0,}?\s{0,}(?:Included)?\s{0,}?\s{0,}[)]{1,}",    # Lyrics   # Audio with Lyrics     # Lyrics included  # With Lyrics
+    r"(?i)(?<!^)[(]{1,}(?:Official)?\s{0,}?\s{0,}(?:)?\s{0,}?\s{0,}Lyrics\s{0,}?\s{0,}(?:Video)?\s{0,}?\s{0,}[)]{1,}",  # Official Lyrics Video
+    r"(?i)(?<!^)[(]{1,}(?:Official)?\s{0,}?\s{0,}(?:)?\s{0,}?\s{0,}Lyric\s{0,}?\s{0,}(?:Video)?\s{0,}?\s{0,}[)]{1,}",   # Official Lyric Video
+    r"(?i)(?<!^)[(]{1,}(?:Official)?\s{0,}?\s{0,}(?:)?\s{0,}?\s{0,}Audio\s{0,}?\s{0,}(?:\d{4})?\s{0,}?\s{0,}[)]{1,}",   # Audio # Official Audio # Official Audio [date]
+    r"(?i)(?<!^)[(]{1,}(?:Official)?\s{0,}?\s{0,}(?:)?\s{0,}?\s{0,}Visualizer\s{0,}?\s{0,}[)]{1,}",  # Official Visualizer # Visualizer
+    r"(?i)(?<!^)[(]{1,}(?:Version)?\s{0,}?\s{0,}(?:Release)?\s{0,}?\s{0,}\d{4}\s{0,}?\s{0,}(?:Version)?\s{0,}?\s{0,}[)]{1,}",  # Just a Date
+    r"(?i)(?<!^)[(]{1,}\s{0,}(?:Cover)?\s{0,}\s{0,}(?:Album)?\s{0,}\s{0,}Art\s{0,}[)]{1,}", # Cover or Cover Art or Cover Album Art
+    r"(?i)(?<!^)[(]{1,}\s{0,}(?:Album)?\s{0,}\s{0,}(?:Cover)?\s{0,}\s{0,}Art\s{0,}[)]{1,}", # Album Cover Art
+    r"(?i)(?<!^)[(]{1,}\s{0,}(?:Album)?\s{0,}\s{0,}(?:Art)?\s{0,}\s{0,}Cover\s{0,}[)]{1,}", # Album Art Cover
+    r"(?i)(?<!^)[(]{1,}\s{0,}(?:Official)?\s{0,}\s{0,}(?:HD)?\s{0,}\s{0,}(?:HQ)?\s{0,}\s{0,}(?:High Definition)?\s{0,}\s{0,}Video\s{0,}[)]{1,}", # Official HD Video # Official Video HD # HD Video  # HQ
+    r"(?i)(?<!^)[(]{1,}\s{0,}(?:360°)?\s{0,}\s{0,}(?:360)?\s{0,}\s{0,}(?:Official)?\s{0,}\s{0,}Visualizer\s{0,}[)]{1,}", # Official Visualizer  # (360° Visualizer)
+    r"(?i)(?<!^)[(]{1,}\s{0,}(?:Official)?\s{0,}\s{0,}(?:Lyric)?\s{0,}\s{0,}(?:Music)?\s{0,}\s{0,}Video\s{0,}[)]{1,}",  # Lyric Video # Our Lyric Video # Music Video
+    r"(?i)(?<!^)[(]{1,}\s{0,}Bass\s{0,}\s{0,}Boosted\s{0,}[)]{1,}", # Bass Boosted
+    r"(?i)(?<!^)[(]{1,}\s{0,}Official.*Version\s{0,}[)]{1,}", # Official Whatever Version
+    r"(?i)(?<!^)[(]{1,}\s{0,}Official\s{1,}Explicit.*\s{0,}[)]{1,}", # Official Explicit Whatever
+    r"(?i)(?<!^)[(]{1,}\s{0,}Video\s{0,}[)]{1,}", # Video  
+    r"(?i)(?<!^)[(]{1,}\s{0,}Live\s{1,}(?:from)?\s{0,}\s{0,}(?:at)?\s{0,}\s{0,}.*\s{0,}[)]{1,}",  # Live from or at 
+    r"(?i)(?<!^)[(]{1,}(?:Explicit)?\s{0,}?\s{0,}(?:Static)?\s{0,}?\s{0,}Video\s{0,}?\s{0,}(?:Static)?\s{0,}?\s{0,}[)]{1,}",     # Static Video
+    r"(?i)(?<!^)[(]{1,}\s{0,}Explicit\s{0,}[)]{1,}", # Explicit
+    r"(?i)(?<!^)[(]{1,}\s{0,}ID\s{0,}[)]{1,}", # ID 
+    r"(?i)(?<!^)[(]{1,}DJ[-\s]{1,}Set.*\s{0,}[)]{1,}", # Dj-Set
+    r"(?i)(?<!^)[(]{1,}\s{0,}\s{0,}\s{0,}(?:High)?\s{0,}\s{0,}(?:Best)?\s{0,}\s{0,}Quality\s{0,}[)]{1,}",  # Best Quality - High Quality
+    r"(?i)(?<!^)[(]{1,}\s{0,}\s{0,}\s{0,}From\s{0,}.*[)]{1,}",  # From ...
+    r"(?i)(?<!^)[(]{1,}(?:Official)?\s{0,}?\s{0,}(?:4K)?\s{0,}?\s{0,}Video\s{0,}[)]{1,}",  # Official 4K Video
+    r"(?i)(?<!^)[(]{1,}Official\s{0,}(?:Song)?\s{0,}?\s{0,}[)]{1,}", # Official Song
+    r"(?i)(?<!^)[(]{1,}Oficial\s{0,}[)]{1,}", # Official misworded 
+    r"(?i)(?<!^)[(]{1,}\s{0,}Directed\s{1,}by\s{0,}.*[)]{1,}",  # Directed by 
+    r"(?i)(?<!^)[(]{1,}\s{0,}Mix[e]{0,}[d]{0,}\s{1,}by\s{0,}.*[)]{1,}",  # Mixed by 
+    r"(?i)(?<!^)[(]{1,}\s{0,}(?:360°)?\s{0,}\s{0,}(?:360)?\s{0,}\s{0,}(?:Official)?\s{0,}\s{0,}Video\s{0,}[)]{1,}",   # 360 Video
+    r"(?i)(?<!^)[(]{1,}\s{0,}Dir[.]{1,}\s{1,}by\s{0,}.*[)]{1,}", # Dir. by
+    r"(?i)(?<!^)[(]{1,}\s{0,}Dir[.]{1,}\s{0,}.*[)]{1,}", # Dir.
+    r"(?i)(?<!^)[(]{1,}\s{0,}(?:\b\w+){0,1}\s+Translation\s{0,}[)]{1,}", # any word + Translation
+    r"(?i)(?<!^)[(]{1,}\s{0,}4K\s{0,}[)]{1,}", # 4K
+    r"(?i)(?<!^)[(]{1,}\s{0,}Presents\s{1,}.*\s{0,}[)]{1,}", # Presents
+    r"(?i)(?<!^)[(]{1,}\s{0,}(?:Vevo\s{1,})?\s{0,}\s{0,}Presents\s{1,}.*\s{0,}[)]{1,}",  # Vevo Presents
+    r"(?i)(?<!^)[(]{1,}(?:Video)?\s{0,}?\s{0,}Time[-]{0,1}lapse\s{0,}?\s{0,}(?:Video)?\s{0,}?\s{0,}(?:Vid[.]{0,1})?\s{0,}?\s{0,}[)]{1,}",  # Timelapse or Time-lapse + optional Video
+    r"(?i)(?<!^)[(]{1,}(?:Animated)?\s{0,}?\s{0,}Video\s{0,}?\s{0,}(?:Animated)?\s{0,}?\s{0,}[)]{1,}", # Animated Video
+    r"(?i)(?<!^)[(]{1,}(?:Animated)?\s{0,}?\s{0,}Vid[.]{0,1}\s{0,}?\s{0,}(?:Animated)?\s{0,}?\s{0,}[)]{1,}", # Animated Vid
+    r"(?i)(?<!^)[(]{1,}(?:Lip)?\s{0,}?\s{0,}(?:Lip-)?\s{0,}?\s{0,}Sync\s{0,}[)]{1,}",  # Lip Sync
+    r"(?i)(?<!^)[(]{1,}(?:Short)?\s{0,}?\s{0,}Film\s{0,}[)]{1,}",  # Short Film 
+    r"(?i)(?<!^)[(]{1,}\s{0,}(?:Late)?\s{0,}?\s{0,}(?:Night)?\s{0,}?\s{0,}Session\s{0,}[)]{1,}", # Late Night Session
+    r"(?i)(?<!^)[(]{1,}\s{0,}(?:360°)?\s{0,}\s{0,}(?:360)?\s{0,}\s{0,}(?:Official)?\s{0,}\s{0,}Visualiser\s{0,}[)]{1,}", # (Visualiser)
+    r"(?i)(?<!^)[(]{1,}\s{0,}(?:Royalty)?\s{0,}\s{0,}(?:Free)?\s{0,}\s{0,}Music\s{0,}[)]{1,}", # (Royalty Free Music)
+    r"(?i)(?<!^)[(]{1,}\s{0,}(?:Fan)?\s{0,}\s{0,}(?:Made)?\s{0,}\s{0,}(?:Memories)?\s{0,}\s{0,}Video\s{0,}[)]{1,}", # (Fan Memories Video)
+    r"(?i)(?<!^)[(]{1,}\s{0,}(?:Fan[-]{0,}Made)?\s{0,}\s{0,}Video\s{0,}[)]{1,}", #Fan-Made Video
+    r"(?i)(?<!^)[(]{1,}\s{0,}\s{0,}(?:Lyrics)?\s{0,}\s{0,}(?:Lyrics\s{1,}[+]{1,}\s{0,})?\s{0,}\s{0,}(?:\b\w+){0,1}\s+Translation\s{0,}[)]{1,}", # (Lyrics + English Translation)
+    r"(?i)(?<!^)[(]{1,}(?:Unreleased)?\s{0,}?\s{0,}(?:4K)?\s{0,}?\s{0,}Video\s{0,}[)]{1,}",  # Unreleased
+    r"(?i)(?<!^)[(]{1,}(?:Unreleased)?\s{0,}?\s{0,}(?:Fan)?\s{0,}?\s{0,}(?:Made)?\s{0,}?\s{0,}(?:Fan-Made)?\s{0,}?\s{0,}Video\s{0,}[)]{1,}", # Unreleased
+    r"(?i)(?<!^)[(]{1,}\d{4}\s{0,}?\s{0,}\s{0,}(?:Mashup)?\s{0,}[)]{1,}",  # (2018 Mashup)
+    r"(?i)(?<!^)[(]{1,}\s{0,}(?:ID)?\s{0,}\s{0,}HQ\s{0,}\s{0,}[)]{1,}",  # (HQ)
+    r"(?i)[(]{1,}\s{0,}(?:ID)?\s{0,}\s{0,}HQ\s{0,}\s{0,}[)]{1,}", # (ID HQ) - start of string
+    r"(?i)(?<!^)[(]{1,}(?:Video)?\s{0,}?\s{0,}(?:Original)?\s{0,}?\s{0,}Version\s{0,}[)]{1,}", # (Video Original Version)
+    r"(?i)(?<!^)[(]{1,}\s{0,}HQ\s{0,}[)]{1,}", # (HQ)
+    r"(?i)(?<!^)[(]{1,}(?:Video)?\s{0,}?\s{0,}(?:Original)?\s{0,}?\s{0,}Ufficiale\s{0,}[)]{1,}", # Video Ufficiale
+    r"(?i)(?<!^)[(]{1,}(?:[^A-Za-z0-9]+Official)?\s{0,}?\s{0,}Video\s{0,}[)]{1,}", # ~Official Video
+    r"(?i)(?<!^)[(]{1,}\s{0,}HD\s{0,}[)]{1,}", # (HD)
+    r"(?i)(?<!^)[(]{1,}(?:On Screen)?\s{0,}?\s{0,}(?:Screen On)?\s{0,}?\s{0,}Lyrics\s{0,}?\s{0,}(?:On Screen)?\s{0,}?\s{0,}[)]{1,}",  # (ON SCREEN LYRICS)
+    r"(?i)(?<!^)[(]{1,}\s{0,}\s{0,}(?:\b\w+){0,1}\s+Ver[.]{1}\s{0,}[)]{1,}",  # (DE Ver.)
+    r"(?i)(?<!^)[(]{1,}(?:Official)?\s{0,}?\s{0,}Video\s{0,}(?:HD)?\s{0,}?[)]{1,}", # (Official Video HD)
+    r"(?i)(?<!^)[(]{1,}(?:No)?\s{0,}?\s{0,}Copyright\s{0,}(?:Music)?\s{0,}?[)]{1,}", # (No Copyright Music)
+    r"(?i)(?<!^)[(]{1,}(?:Our)?\s{0,}?\s{0,}Lyric\s{0,}(?:Video)?\s{0,}?[)]{1,}", # (Our Lyric Video)
+    r"(?i)(?<!^)[(]{1,}(?:Album[^A-Za-z0-9]+[s]{0,1})?\s{0,}?\s{0,}Version\s{0,}?[)]{1,}", # (Album Version)
+    r"(?i)(?<!^)[(]{1,}(?:O[f]{0,2}icial)?\s{0,}?\s{0,}Video\s{0,}(?:HD)?\s{0,}?[)]{1,}", # Official 
+    r"(?i)(?<!^)[(]{1,}\s{0,}Video\s{0,}(?:O[f]{1,2}icial)?\s{0,}?[)]{1,}",  # (Video Oficial)
+    r"(?i)(?<!^)[(]{1,}(?:O[f]{0,2}icial)?\s{0,}?(?:HD)?\s{0,}?\s{0,}Clip\s{0,}(?:HD)?\s{0,}?[)]{1,}", # Official Clip
+    r"(?i)(?<!^)[(]{1,}\s{0,}(?:Video)?\s{0,}?(?:HD)?\s{0,}?\s{0,}Officiel\s{0,}(?:Video)?\s{0,}?(?:HD)?\s{0,}?(?:Clip)?\s{0,}?(?:Video)?\s{0,}?[)]{1,}",    # (Clip Officiel)
+
+    r"[(]\s{0,}[)]" # Removing Empty Parenthesis
+ 
+    # (Remix) ??????
+    # (Edit) ?????
+    # (Acapella) ?????
+    # (2019 Rework) ????
+
+    # (Lyrics/Testo)
+    # (Exclusive Music Video)
+    # (Official Sony a6500 4K Music Video)
+    # (Shot By @ShayVisuals)
+    # (Unreleased Tribute Music Video)
+    # (freestyle)
+    # (Hood Movie)
+    # (Sub. Español)
+    # (Dirty)
+    # (Remix)
+    # ( Word Exclusive - Official Music Video)
+    # (Unreleased Audio)
+    #  (Official Music Video - WSHH Exclusive)
+    # (Freeway) - A single word? ( KiingRod )
+    # (Shot on iPhone by Cole Bennett)
+    # (Part 3)
+    # (Official Video Release)
+    #  Edit(ed) By.
+    # (WSHH Exclusive)
+    # (A2X Production)
+    # (Exclusive - Official Music Video)
+    # (Exclusive Music Video)
+    # (Extended Snippet HQ)
+    # (Exclusive Lyric Video)
+    # (Unreleased)
+    # (scrapped video)
+    # (YGK) if not (VIP)
+    # (Slowed + Reverb)
+    # (Coffin Dance Meme Song Remix)
+    #  Aftermovie (Italy)
+    # (Remake)
+    # (Ali-A Fortnite Intro Song)
+    # (DJ KARSKY BOOTLEG)
+    # (𝙊𝙧𝙞𝙜𝙞𝙣𝙖𝙡 𝙈𝙞𝙭 2015)
+    # ( Dance Club Style )
+    # (2k15 MashUp)
+    # (New)
+    # (MASH 2021) - (QARV!K MASH)
+    # ( Javi Mula Vocals )
+    # PREMIERA 2021) or PREMIER or Preview
+    # (Visual Audio)
+    # (ENDRIU BOOTLEG 2021)
+    #  
+    # 
+    # 
+    # 
+    # 
+    #
+    #
+    #
+    #
+    #
+    #
+    #
+    #
+    
+    # 
+
+
+] 
+
+def clean_unrequired_from_parenthesis(track):
+    if track.find('(')!=-1:
+        for regex in CLEAN_PARENTHESIS:
+            track = re.sub(regex, "", track, flags=re.IGNORECASE)
+
+    # Remove Multiple Spaces
+    track = ' '.join(track.split())
+    
+    # hashtags and tags
+
+    # Tik-Tok or TikTok
+    # Chinese Characters    
+
+    return track
+
+STRIP_SPECIFIC_WORDS = [
+    r"(?i)\btik[-]{0,1}tok\b",
+    r"(?i)\btik[-]{0,1}\s{1,}tok\b"
+]
+
+def strip_specific_words(track):
+    for regex in STRIP_SPECIFIC_WORDS:
+        track = re.sub(regex, "", track, flags=re.IGNORECASE)
+
+    # Remove Multiple Spaces
+    track = ' '.join(track.split())
+
+    return track 
+
+
 Escape_Words = ["the","and","are","is","was","were","by","of","no","so","with","be","to"]
 
 def clean_track_for_extraction(my_str):
@@ -360,6 +582,7 @@ def clean_track_for_extraction_vol2(my_str):
     
     my_str = re.sub(r"\s\s+" , " ", my_str)
     my_str = re.sub(r"\s{2,}", " ", my_str)
+
 
     return my_str
 
@@ -683,23 +906,50 @@ def test_album_names(artist_albums,value_to_check):
 
 
 RECORD_LABEL_RULES = [
-    r"\s*$", #  remove multiple spaces
+    r"\s*$",                 #  Remove multiple spaces
+    r"(?i)\bLlc\b",          #  Remove capital insensitive LLC
+    r"(?i)(?<!^)\b[b]{1,}[y]{1,}\b\s{1,}\w+\s{0,}$" # Remove if one word after "by" then end of string 
 ]
 
 def format_record_label(record_label):
+    print("\n")
+
+    print("Before Regexes : {}".format(str(record_label).strip()))
+
     for x in RECORD_LABEL_RULES:
         record_label = re.sub(x, "", record_label, flags=re.IGNORECASE)
     
+    print("After Regexes : {}".format(record_label.strip()))
+
+    if len(record_label) <= 4:
+        record_label = str(record_label).upper()
+
+    print("After Capitalization of Small Label : {}".format(record_label))
+
     record_label = record_label.split()
 
     for index, word in enumerate(record_label):
         print(word)
         if len(word) <= int(2):
-            record_label[index] = word.upper()
-    
-    print("This is seperator object {}".format(find_separator(record_label)))
+            if index != 0 and word not in Escape_Words:
+                record_label[index] = word.upper()
+        else:
+            record_label[index] = word.capitalize()
 
     record_label = ' '.join(record_label)
     
+    print("After capitalization {}".format(record_label).strip())
+
+    try:
+        for m in re.finditer("\/[a-z]",record_label):
+            character_after_slash = int(m.end()-1)
+            record_label = record_label[:character_after_slash] + record_label[character_after_slash].upper() + record_label[character_after_slash+1:]
+    
+        print("Replace character after slash : {}".format(record_label))
+
+    except:
+        pass  
+    
+    print("\n")
     return record_label
 

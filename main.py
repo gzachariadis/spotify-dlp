@@ -15,16 +15,26 @@ f = sys.argv[1]
 # The information pulled from youtube
 youtube_information = json.loads(f)
 
+print(youtube_information)
+
 # Set the youtube video title to variable
 youtube_video_full_title = youtube_information['fulltitle']
 
 print("Video title identified as {}.".format(youtube_video_full_title).strip())
 
 # Remove Things that might mess with identification
+print("Removing Emoji's....")
 youtube_video_full_title = deEmojify(youtube_video_full_title)
+print(youtube_video_full_title)
+
+print("Clearing Title...")
 youtube_video_full_title = clear_title(youtube_video_full_title)
+print(youtube_video_full_title)
+
+print("Regexes Full Title...")
 youtube_video_full_title = re.sub(r"[\%\/\\\&\?\,\'\;\:\!\-\:\)]{2,}", '', youtube_video_full_title)
 youtube_video_full_title = re.sub(r"\s{2,}", " ", youtube_video_full_title)
+print(youtube_video_full_title)
 
 print("Cleaned title a bit for processing...")
 print("New Title {}".format(youtube_video_full_title))
@@ -60,7 +70,7 @@ if artist is None:
 
     print("Searching Spotify for {}....".format(str(artist)).strip())
     # Search Spotify for Artist with new artist name
-    artist = did_i_identify_artist_correctly(str(artist).strip())
+    artist = did_i_identify_artist_correctly(str(clean_artist(artist)).strip())
 
 # if artist from title is not able, use other alternatives
 if artist is None:

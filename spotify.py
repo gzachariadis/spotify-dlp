@@ -15,13 +15,17 @@ from datetime import datetime
 import pyinputplus as pyip
 
 def spotify_authentication():
-    spotify = spotipy.Spotify(auth_manager=SpotifyOAuth(client_id=CLIENT_ID,
+    try:
+        spotify = spotipy.Spotify(auth_manager=SpotifyOAuth(client_id=CLIENT_ID,
                                                client_secret=CLIENT_SECRET,
                                                redirect_uri=redirect_uri,
                                                cache_path=cache_path))
-    spotify.trace = False
-    time.sleep(10.0)
-    return spotify
+        spotify.trace = False
+        time.sleep(10.0)
+        return spotify
+    except:
+        print("Spotify Authentication Failed...")
+        return 
 
 def did_i_identify_artist_correctly(artist):
     spotify = spotify_authentication()
@@ -35,6 +39,9 @@ def did_i_identify_artist_correctly(artist):
             time.sleep(2.0)       
             resulting_artists.extend(search_results['artists']['items'])
     except:
+        search_results = spotify.search(str(artist).strip(),limit=5,offset=0,type="artist")
+        time.sleep(2.0)       
+        resulting_artists.extend(search_results['artists']['items'])
         print("Error Searching Artist on Spotify....")
 
     artists_found = find_values("name",json.dumps(resulting_artists))
@@ -45,6 +52,7 @@ def did_i_identify_artist_correctly(artist):
         for i in artists_found:
             if i.lower() == artist.lower():
                 return str(convert_string(artist)).strip()
+    print("Done")
     return 
 
 def search_tracks_to_find_artist(youtube_title,track):
