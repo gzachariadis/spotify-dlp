@@ -43,6 +43,10 @@ if youtube_video_full_title.find('(')!=-1:
         youtube_video_full_title = re.sub(r'(?i)(?<!^)[(]{1,}\s{0,}.*\bft\b.*\s{0,}[)]{1,}', '', youtube_video_full_title)
         youtube_video_full_title = re.sub(r'(?i)(?<!^)[(]{1,}\s{0,}.*\bfeat\b.*\s{0,}[)]{1,}', '', youtube_video_full_title)
         youtube_video_full_title = re.sub(r'(?i)(?<!^)[(]{1,}\s{0,}.*\bMix\b.*\s{0,}[)]{1,}', '', youtube_video_full_title)
+        youtube_video_full_title = re.sub(r'(?i)(?<!^)[(]{1,}\s{0,}.*\bEdit\b.*\s{0,}[)]{1,}', '', youtube_video_full_title)
+        youtube_video_full_title = re.sub(r'(?i)(?<!^)[(]{1,}\s{0,}.*\bAnthem\b.*\s{0,}[)]{1,}', '', youtube_video_full_title)
+        youtube_video_full_title = re.sub(r'(?i)(?<!^)[(]{1,}\s{0,}.*\bVIP\b.*\s{0,}[)]{1,}', '', youtube_video_full_title)
+
 
     if youtube_video_full_title.find('(')!=-1:
         print(youtube_video_full_title)
