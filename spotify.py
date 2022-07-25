@@ -180,7 +180,6 @@ def settle_title(track):
   
         return tracks
 
-
 def search_track_by_youtube_video_title(track,artist):
     # Initiate two objects one for songs matching the artist and one for the final result
     search_results = {}
@@ -413,3 +412,56 @@ def get_track_by_id(track_id,artist):
     featuring_artists.clear()
 
     return track
+
+def find_potential_artists(track):
+    potentials = []
+    artists = []
+    
+    hashtags = {tag.strip("#") for tag in track.split() if tag.startswith("#")}
+    if hashtags:
+        for i in list(hashtags):
+            potentials.append(i)
+
+    users = {user.strip("@") for user in track.split() if user.startswith("@")}
+    if users:
+        for x in list(users):
+            potentials.append(x)
+
+    for potential in potentials:
+        if potential:
+            info = did_i_identify_artist_correctly(str(potential))
+            if info is not None:
+                artists.append(info)
+    
+    if artists:
+        return artists
+
+    return
+    
+def find_potential_genres(track):
+    potentials_genres = []
+    genres_found = []
+
+    hashtags = {tag.strip("#") for tag in track.split() if tag.startswith("#")}
+    
+    if hashtags:
+        for i in list(hashtags):
+            potentials_genres.append(i)
+
+    users = {user.strip("@") for user in track.split() if user.startswith("@")}
+    if users:
+        for x in list(users):
+            potentials_genres.append(x)
+    
+    for each_genre in potentials_genres:
+        if each_genre:
+            for key in GENRES_DICTIONARY.keys():
+                check_genre = math.trunc(similar(str(each_genre).lower().strip(),str(key).lower().strip()))
+                if int(check_genre) == int(100):
+                    genres_found.append(each_genre)
+    
+    if genres_found:
+        return genres_found
+    else:
+        return 
+    

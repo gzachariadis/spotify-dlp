@@ -1,4 +1,5 @@
 from __future__ import print_function
+from ast import pattern
 from calendar import c
 import re
 import music_metadata_filter.functions as functions
@@ -304,9 +305,8 @@ GENRES_DICTIONARY = {
 }
 
 SEPARATORS = [
-    ' -- ', '--', ' ~ ', ' - ', ' – ', ' — ',
-    ' // ', '-', '–', '—', ':', '|', '///', '/', '&','►'
-]
+    ' -- ', '--', ' ~ ', ' - ', ' – ', ' — ', ' ／ ', ' | ', ' // ', '-', '–', '—', ':', '|', '///', '/', '&','►'
+    ]
 
 ARTIST_SEPERATORS = ["&",",","x","ft","ft.","featuring","feat.","feat"]
 
@@ -333,8 +333,197 @@ CLEAN_ALBUM_DICTIONARY = [
 ]
 
 CLEAN_BRACKETS = [
-    r"(?i)\[{1,}\s{0,}(?:Official)?\s{0,}(?:Music)?\s{0,}Video\]{1,}", # Official Music Video 
-
+    r"(?i)\[{1,}\s{0,}Official\s{0,}(?:Music)?\s{0,}Video\]{1,}",
+    r"(?i)\[{1,}\s{0,}Official\s{0,}(?:Music)?\s{0,}Visualizer\]{1,}",
+    r"(?i)\[{1,}\s{0,}(?:Music)?\s{0,}Visualizer\]{1,}",
+    r"(?i)\[{1,}\s{0,}(?:Audio)?\s{0,}?\s{0,}(?:With)?\s{0,}?\s{0,}Lyrics\s{0,}?\s{0,}(?:Included)?\s{0,}?\s{0,}\]{1,}",    # Lyrics   # Audio with Lyrics     # Lyrics included  # With Lyrics
+    r"(?i)\[{1,}\s{0,}(?:Official)?\s{0,}?\s{0,}(?:)?\s{0,}?\s{0,}Lyrics\s{0,}?\s{0,}(?:Video)?\s{0,}?\s{0,}\]{1,}",  # Official Lyrics Video
+    r"(?i)\[{1,}\s{0,}(?:Official)?\s{0,}?\s{0,}(?:)?\s{0,}?\s{0,}Lyric\s{0,}?\s{0,}(?:Video)?\s{0,}?\s{0,}\]{1,}",   # Official Lyric Video
+    r"(?i)\[{1,}\s{0,}(?:Official)?\s{0,}?\s{0,}(?:)?\s{0,}?\s{0,}Audio\s{0,}?\s{0,}(?:\d{4})?\s{0,}?\s{0,}\]{1,}",   # Audio # Official Audio # Official Audio [date]
+    r"(?i)\[{1,\s{0,}}(?:Official)?\s{0,}?\s{0,}(?:)?\s{0,}?\s{0,}Visualizer\s{0,}?\s{0,}\]{1,}",  # Official Visualizer # Visualizer
+    r"(?i)\[{1,}\s{0,}(?:Version)?\s{0,}?\s{0,}(?:Release)?\s{0,}?\s{0,}\d{4}\s{0,}?\s{0,}(?:Version)?\s{0,}?\s{0,}\]{1,}",  # Just a Year
+    r"(?i)\[{1,}\s{0,}(?:Cover)?\s{0,}\s{0,}(?:Album)?\s{0,}\s{0,}Art\s{0,}\]{1,}", # Cover or Cover Art or Cover Album Art
+    r"(?i)\[{1,}\s{0,}(?:Album)?\s{0,}\s{0,}(?:Cover)?\s{0,}\s{0,}Art\s{0,}\]{1,}", # Album Cover Art
+    r"(?i)\[{1,}\s{0,}(?:Album)?\s{0,}\s{0,}(?:Art)?\s{0,}\s{0,}Cover\s{0,}\]{1,}", # Album Art Cover
+    r"(?i)\[{1,}\s{0,}(?:Official)?\s{0,}\s{0,}(?:HD)?\s{0,}\s{0,}(?:HQ)?\s{0,}\s{0,}(?:High Definition)?\s{0,}\s{0,}Video\s{0,}\]{1,}", # Official HD Video # Official Video HD # HD Video  # HQ
+    r"(?i)\[{1,}\s{0,}(?:360°)?\s{0,}\s{0,}(?:360)?\s{0,}\s{0,}(?:Official)?\s{0,}\s{0,}Visualizer\s{0,}\]{1,}", # Official Visualizer  # (360° Visualizer)
+    r"(?i)\[{1,}\s{0,}(?:Official)?\s{0,}\s{0,}(?:Lyric)?\s{0,}\s{0,}(?:Music)?\s{0,}\s{0,}Video\s{0,}\]{1,}",  # Lyric Video # Our Lyric Video # Music Video
+    r"(?i)\[{1,}\s{0,}Bass\s{0,}\s{0,}Boosted\s{0,}\]{1,}", # Bass Boosted
+    r"(?i)\[{1,}\s{0,}Official.*Version\s{0,}\]{1,}", # Official Whatever Version
+    r"(?i)\[{1,}\s{0,}Official\s{1,}Explicit.*\s{0,}\]{1,}", # Official Explicit Whatever
+    r"(?i)\[{1,}\s{0,}Video\s{0,}\]{1,}", # Video  
+    r"(?i)\[{1,}\s{0,}Live\s{1,}(?:from)?\s{0,}\s{0,}(?:at)?\s{0,}\s{0,}.*\s{0,}\]{1,}",  # Live from or at 
+    r"(?i)\[{1,}(?:Explicit)?\s{0,}?\s{0,}(?:Static)?\s{0,}?\s{0,}Video\s{0,}?\s{0,}(?:Static)?\s{0,}?\s{0,}\]{1,}",     # Static Video
+    r"(?i)\[{1,}\s{0,}Explicit\s{0,}\]{1,}", # Explicit
+    r"(?i)\[{1,}\s{0,}ID\s{0,}\]{1,}", # ID 
+    r"(?i)\[{1,}DJ[-\s]{1,}Set.*\s{0,}\]{1,}", # Dj-Set
+    r"(?i)\[{1,}\s{0,}\s{0,}\s{0,}(?:High)?\s{0,}\s{0,}(?:Best)?\s{0,}\s{0,}Quality\s{0,}\]{1,}",  # Best Quality - High Quality
+    r"(?i)\[{1,}\s{0,}\s{0,}\s{0,}From\s{0,}.*\]{1,}",  # From ...
+    r"(?i)\[{1,}(?:Official)?\s{0,}?\s{0,}(?:4K)?\s{0,}?\s{0,}Video\s{0,}\]{1,}",  # Official 4K Video
+    r"(?i)\[{1,}Official\s{0,}(?:Song)?\s{0,}?\s{0,}\]{1,}", # Official Song
+    r"(?i)\[{1,}Oficial\s{0,}\]{1,}", # Official misworded 
+    r"(?i)\[{1,}\s{0,}Directed\s{1,}by\s{0,}.*\]{1,}",  # Directed by 
+    r"(?i)\[{1,}\s{0,}Mix[e]{0,}[d]{0,}\s{1,}by\s{0,}.*\]{1,}",  # Mixed by 
+    r"(?i)\[{1,}\s{0,}(?:360°)?\s{0,}\s{0,}(?:360)?\s{0,}\s{0,}(?:Official)?\s{0,}\s{0,}Video\s{0,}\]{1,}",   # 360 Video
+    r"(?i)\[{1,}\s{0,}Dir[.]{1,}\s{1,}by\s{0,}.*\]{1,}", # Dir. by
+    r"(?i)\[{1,}\s{0,}Dir[.]{1,}\s{0,}.*\]{1,}", # Dir.
+    r"(?i)\[{1,}\s{0,}(?:\b\w+){0,1}\s+Translation\s{0,}\]{1,}", # any word + Translation
+    r"(?i)\[{1,}\s{0,}4K\s{0,}\]{1,}", # 4K
+    r"(?i)\[{1,}\s{0,}Presents\s{1,}.*\s{0,}\]{1,}", # Presents
+    r"(?i)\[{1,}\s{0,}(?:Vevo\s{1,})?\s{0,}\s{0,}Presents\s{1,}.*\s{0,}\]{1,}",  # Vevo Presents
+    r"(?i)\[{1,}(?:Video)?\s{0,}?\s{0,}Time[-]{0,1}lapse\s{0,}?\s{0,}(?:Video)?\s{0,}?\s{0,}(?:Vid[.]{0,1})?\s{0,}?\s{0,}\]{1,}",  # Timelapse or Time-lapse + optional Video
+    r"(?i)\[{1,}(?:Animated)?\s{0,}?\s{0,}Video\s{0,}?\s{0,}(?:Animated)?\s{0,}?\s{0,}\]{1,}", # Animated Video
+    r"(?i)\[{1,}(?:Animated)?\s{0,}?\s{0,}Vid[.]{0,1}\s{0,}?\s{0,}(?:Animated)?\s{0,}?\s{0,}\]{1,}", # Animated Vid
+    r"(?i)\[{1,}(?:Lip)?\s{0,}?\s{0,}(?:Lip-)?\s{0,}?\s{0,}Sync\s{0,}\]{1,}",  # Lip Sync
+    r"(?i)\[{1,}(?:Short)?\s{0,}?\s{0,}Film\s{0,}\]{1,}",  # Short Film 
+    r"(?i)\[{1,}\s{0,}(?:Late)?\s{0,}?\s{0,}(?:Night)?\s{0,}?\s{0,}Session\s{0,}\]{1,}", # Late Night Session
+    r"(?i)\[{1,}\s{0,}(?:360°)?\s{0,}\s{0,}(?:360)?\s{0,}\s{0,}(?:Official)?\s{0,}\s{0,}Visualiser\s{0,}\]{1,}", # (Visualiser)
+    r"(?i)\[{1,}\s{0,}(?:Royalty)?\s{0,}\s{0,}(?:Free)?\s{0,}\s{0,}Music\s{0,}\]{1,}", # (Royalty Free Music)
+    r"(?i)\[{1,}\s{0,}(?:Fan)?\s{0,}\s{0,}(?:Made)?\s{0,}\s{0,}(?:Memories)?\s{0,}\s{0,}Video\s{0,}\]{1,}", # (Fan Memories Video)
+    r"(?i)\[{1,}\s{0,}(?:Fan[-]{0,}Made)?\s{0,}\s{0,}Video\s{0,}\]{1,}", #Fan-Made Video
+    r"(?i)\[{1,}\s{0,}\s{0,}(?:Lyrics)?\s{0,}\s{0,}(?:Lyrics\s{1,}[+]{1,}\s{0,})?\s{0,}\s{0,}(?:\b\w+){0,1}\s+Translation\s{0,}\]{1,}", # (Lyrics + English Translation)
+    r"(?i)\[{1,}(?:Unreleased)?\s{0,}?\s{0,}(?:4K)?\s{0,}?\s{0,}Video\s{0,}\]{1,}",  # Unreleased
+    r"(?i)\[{1,}(?:Unreleased)?\s{0,}?\s{0,}(?:Fan)?\s{0,}?\s{0,}(?:Made)?\s{0,}?\s{0,}(?:Fan-Made)?\s{0,}?\s{0,}Video\s{0,}\]{1,}", # Unreleased
+    r"(?i)\[{1,}\d{4}\s{0,}?\s{0,}\s{0,}(?:Mashup)?\s{0,}\]{1,}",  # (2018 Mashup)
+    r"(?i)\[{1,}\s{0,}(?:ID)?\s{0,}\s{0,}HQ\s{0,}\s{0,}\]{1,}",  # (HQ)
+    r"(?i)\[{1,}\s{0,}(?:ID)?\s{0,}\s{0,}HQ\s{0,}\s{0,}\]{1,}", # (ID HQ) - start of string
+    r"(?i)\[{1,}(?:Video)?\s{0,}?\s{0,}(?:Original)?\s{0,}?\s{0,}Version\s{0,}\]{1,}", # (Video Original Version)
+    r"(?i)\[{1,}\s{0,}HQ\s{0,}\]{1,}", # (HQ)
+    r"(?i)\[{1,}(?:Video)?\s{0,}?\s{0,}(?:Original)?\s{0,}?\s{0,}Ufficiale\s{0,}\]{1,}", # Video Ufficiale
+    r"(?i)\[{1,}(?:[^A-Za-z0-9]+Official)?\s{0,}?\s{0,}Video\s{0,}\]{1,}", # ~Official Video
+    r"(?i)\[{1,}\s{0,}HD\s{0,}\]{1,}", # (HD)
+    r"(?i)\[{1,}\s{0,}(?:On Screen)?\s{0,}?\s{0,}(?:Screen On)?\s{0,}?\s{0,}Lyrics\s{0,}?\s{0,}(?:On Screen)?\s{0,}?\s{0,}\]{1,}",  # (ON SCREEN LYRICS)
+    r"(?i)\[{1,}\s{0,}\s{0,}(?:\b\w+){0,1}\s+Ver[.]{1}\s{0,}\]{1,}",  # (DE Ver.)
+    r"(?i)\[{1,}\s{0,}(?:Official)?\s{0,}?\s{0,}Video\s{0,}(?:HD)?\s{0,}?\]{1,}", # (Official Video HD)
+    r"(?i)\[{1,}\s{0,}(?:No)?\s{0,}?\s{0,}Copyright\s{0,}(?:Music)?\s{0,}?\]{1,}", # (No Copyright Music)
+    r"(?i)\[{1,}\s{0,}(?:Our)?\s{0,}?\s{0,}Lyric\s{0,}(?:Video)?\s{0,}?\]{1,}", # (Our Lyric Video)
+    r"(?i)\[{1,}\s{0,}(?:Album[^A-Za-z0-9]+[s]{0,1})?\s{0,}?\s{0,}Version\s{0,}?\]{1,}", # (Album Version)
+    r"(?i)\[{1,}\s{0,}(?:O[f]{0,2}icial)?\s{0,}?\s{0,}Video\s{0,}(?:HD)?\s{0,}?\]{1,}", # Official 
+    r"(?i)\[{1,}\s{0,}Video\s{0,}(?:O[f]{1,2}icial)?\s{0,}?\]{1,}",  # (Video Oficial)
+    r"(?i)\[{1,}\s{0,}(?:O[f]{0,2}icial)?\s{0,}?(?:HD)?\s{0,}?\s{0,}Clip\s{0,}(?:HD)?\s{0,}?\]{1,}", # Official Clip
+    r"(?i)\[{1,}\s{0,}(?:Video)?\s{0,}?(?:HD)?\s{0,}?\s{0,}Officiel\s{0,}(?:Video)?\s{0,}?(?:HD)?\s{0,}?(?:Clip)?\s{0,}?(?:Video)?\s{0,}?\]{1,}",    # (Clip Officiel)
+    r"(?i)\[{1,}\s{0,}(?:Unreleased)?\s{0,}?\s{0,}(?:Tribute)?\s{0,}?\s{0,}(?:Music)?\s{0,}?\s{0,}Video\s{0,}\]{1,}", # (Unreleased Tribute Music Video)
+    r"(?i)\[{1,}\s{0,}(?:Unreleased)?\s{0,}?\s{0,}(?:Exclusive)?\s{0,}?\s{0,}(?:4K)?\s{0,}?\s{0,}Audio\s{0,}\]{1,}", # (Unreleased Tribute Music Audio)
+    r"(?i)\[{1,}\s{0,}(?:Exclusive)?\s{0,}?\s{0,}(?:Music)?\s{0,}?\s{0,}(?:HQ)?\s{0,}?\s{0,}Audio\s{0,}\]{1,}", # (Exclusive Music Audio)     # (Unreleased Audio)
+    r"(?i)\[{1,}\s{0,}(?:(?:\b\w+){0,2})\s{0,}(?:Exclusive)?\s{0,}?\s{0,}(?:- Official)?\s{0,}?\s{0,}(?:Music)?\s{0,}?\s{0,}Video\s{0,}\]{1,}",  # ( 2 Words - Official Music Video)
+    r"(?i)\[{1,}\s{0,}Remix\s{0,}\]{1,}",  # (Remix)
+    r"(?i)\[{1,}\s{0,}Dirty\s{0,}\]{1,}",  # (Dirty)
+    r"(?i)\[{1,}\s{0,}Unreleased\s{0,}\]{1,}", # (Unreleased)
+    r"(?i)\[{1,}\s{0,}New\s{0,}\]{1,}",   # (New)
+    r"(?i)\[{1,}\s{0,}Remake\s{0,}\]{1,}",  # (Remake)
+    r"(?i)\[{1,}\s{0,}\s{0,}\s{0,}Shot\s{1,}by\s{1,}.*\]{1,}", # Shot By.....
+    r"\[{1,}\s{0,}\]", # Removing Empty Parenthesis
+    r"(?i)\[{1,}\s{0,}(?:O[f]{0,2}icial)?\s{0,}?(?:HD)?\s{0,}?(?:Video)?\s{0,}?\s{0,}Release\s{0,}\]{1,}",  # (Official Video Release)
+    r"(?i)\[{1,}\s{0,}(?:Exclusive -)?\s{0,}?(?:O[f]{0,2}icial)?\s{0,}?\s{0,}(?:Exclusive)?\s{0,}?\s{0,}(?:Music)?\s{0,}?\s{0,}Video\s{0,}\]{1,}",  # (Exclusive - Official Music Video)
+    r"(?i)\[{1,}\s{0,}\s{0,}\s{0,}Edit[e]{0,1}[d]{0,1}\s{1,}by[.]{0,1}\s{1,}.*\]{1,}",  # Edit(ed) By.
+    r"(?i)\[{1,}\s{0,}(?:\w+\W+){1,5}\s{0,}Production[s]{0,1}\s{0,}\]{1,}$", # 1-5 words + Production(s)
+    r"(?i)\[{1,}(?:Mash)?\s{0,}?\s{0,}(?:\d{1}[k]{1}\d{2}\s{0,}?\s{0,})?\s{0,}Mashup\s{0,}\s{0,}(?:\d{1}[k]{1}\d{2})?\s{0,}?\]{1,}",  # (2k15 MashUp) or (2k19 Mashup)
+    r"(?i)\[{1,}\s{0,}(?!VIP)(?!Original)(?:\w+){1}\s{0,}\]{1,}",  # A Single Word in Parenthesis not VIP    # (freestyle) # (YGK) if not (VIP)   # (Freeway) - A single word? ( KiingRod )
+    r"(?i)\[{1,}\s{0,}(?:Visual)?\s{0,}\s{0,}(?:Meme)?\s{0,}\s{0,}(?:Intro)?\s{0,}\s{0,}Audio\s{0,}\]{1,}",   # (Visual Audio)
+    r"(?i)\[{1,}\s{0,}(?:Exclusive)?\s{0,}\s{0,}(?:Meme)?\s{0,}\s{0,}(?:Slowed)?\s{0,}\s{0,}Video\s{0,}\]{1,}",
+    r"(?i)\[{1,}\s{0,}(?:Slowed [+]{0,1})?\s{0,}\s{0,}Reverb\s{0,}\]{1,}", # (Slowed + Reverb)
+    r"(?i)\[{1,}\s{0,}(?:\w+\W+){1}\s{0,}Exclusive\s{0,}\]{1,}",  # (WSHH Exclusive)
+    r"(?i)\[{1,}\s{0,}\s{0,}Part\s{1,}\d{1,2}\s{0,}\]{1,}",  # (Part 3)
+    r"(?i)\[{1,}\s{0,}\s{0,}\s{0,}Shot\s{1,}on\s{1,}.*\]{1,}", # (Shot on iPhone by Cole Bennett)
+    r"(?i)\[{1,}(?:Mash)?\s{0,}?\s{0,}(?:\d{1}[k]{1}\d{2}\s{0,}?\s{0,})?\s{0,}Mash\s{0,}\s{0,}(?:\d{1}[k]{1}\d{2})?\s{0,}?\]{1,}", # (MASH 2K21)
+    r"(?i)\[{1,}(?:Mash)?\s{0,}?\s{0,}(?:\d{4}\s{0,}?\s{0,})?\s{0,}Mash\s{0,}\s{0,}(?:\d{4})?\s{0,}?\]{1,}", # (MASH 2021)
+    r"(?i)\[{1,}\s{0,}(?:\w+\W+){1,5}\s{0,}Movie\s{0,}\]{1,}", # (Hood Movie)
+    r"(?i)\[{1,}\s{0,}(?:Video)?\s{0,}?(?:HD)?\s{0,}?\s{0,}Aftermovie\s{0,}(?:Video)?\s{0,}?(?:HD)?\s{0,}?(?:Video)?\s{0,}?\]{1,}",  #  Aftermovie
+    r"(?i)\[{1,}\s{0,}(?:\w+\W+){0,1}Aftermovie\s{0,}\]{1,}", # (Aftermovie)
+    r"(?i)\[{1,}\s{0,}(?:\w+\W+){1}Aftermovie\s{0,}\]{1,}", # (Italy Aftermovie)
+    r"(?i)\[{1,}\s{0,}(?:\w+\W+){1,4}\s{0,}Bootleg\s{0,}\]{1,}",  # (DJ KARSKY BOOTLEG)
+    r"(?i)\[{1,}\s{0,}O[f]{0,2}icial\s{1,}(?:\w+\W+){1,5}\s{0,}\]{1,}", # (Official Music Video - WSHH Exclusive)
+    r"(?i)\[{1,}\s{0,}O[f]{0,2}icial\s{1,}(?:VideoClip)\s{0,}\]{1,}", # (Official Videoclip)
+    r"(?i)\[{1,}(?:Intro)?\s{0,}\d{4}\s{0,}?\s{0,}\s{0,}(?:Intro)?\s{0,}\]{1,}", # (Intro 2017)
+    r"(?i)\[{1,}\s{0,}HQ\s{1,}O[f]{0,2}icial\s{0,}\]{1,}", # (HQ Official)
+    r"(?i)\[{1,}\s{0,}(?:Official)?\s{0,}?\s{0,}Video\s{0,}(?:Clip)?\s{0,}?\]{1,}", # (Official Video Clip)
+    r"(?i)\[{1,}\s{0,}(?:Official)?\s{0,}?(?:Free)?\s{0,}?\s{0,}Download\s{0,}(?:Free)?\s{0,}?\]{1,}", # (FREE DOWNLOAD)
+    r"(?i)\[{1,}\s{0,}(?:New)?\s{0,}?(?:Free)?\s{0,}?\s{0,}Music\s{0,}(?:Stream)?\s{0,}?\]{1,}",   # (NEW MUSIC)
+    r"(?i)\[{1,}\s{0,}(?:Official)?\s{0,}?(?:HD)?\s{0,}?(?:Full)?\s{0,}?\s{0,}Stream\s{0,}(?:Full)?\s{0,}?\]{1,}",  # (Official Full Stream)
+    r"(?i)\[{1,}\s{0,}(?:Official)?\s{0,}?(?:Preview)?\s{0,}?(?:PREMIER)?\s{0,}?(?:PREMIERA)?\s{0,}?\s{0,}\d{4}\s{0,}\]{1,}",     # PREMIERA 2021) or PREMIER or Preview
+    r"(?i)\[{1,}\s{0,}(?:\w+\W+){1,1}\s{0,}Bootleg\s{0,}?\s{0,}(?:\d{4})\s{0,}?\s{0,}\]{1,}",     # (ENDRIU BOOTLEG 2021)
+    r"(?i)\[{1,}\s{0,}(?:\w+\W+){1,5}\s{0,}Recap\s{0,}\]{1,}", # (Summer Tour 2017 Recap)
+    r"(?i)\[{1,}\s{0,}(?:\w+\W+){1,5}\s{0,}HQ\s{0,}\]{1,}",  # (Extended Snippet HQ)
+    r"(?i)\[{1,}\s{0,}(?:\w+\W+){1,5}\s{0,}\W+Lyrics\W+\s{0,}\]{1,}", # (Whatever Lyrics)
+    r"(?i)\[{1,}\s{0,}Meme\s{1,}(?:\w+\W+){0,3}Song\s{0,}\]{1,}", # (Meme Words Song)
+    r"(?i)\[{1,}\s{0,}(?:\w+\W+){0,3}Meme\s{1,}(?:\w+\W+){0,3}Remix\s{0,}\]{1,}", # (Coffin Dance Meme Song Remix)
+    r"(?i)\[{1,}\s{0,}(?:\w+\W+){0,3}Intro\s{1,}(?:\w+\W+){0,3}Song\s{0,}\]{1,}", # (Ali-A Fortnite Intro Song)
+    r"(?i)\[{1,}\s{0,}(?:\w+\W+){0,3}Style\s{0,}\]{1,}",  # ( Dance Club Style )
+    r"(?i)\[{1,}\s{0,}Billboard\s{0,}?(?:\w+\W+){1}\s{0,}?\s{0,}\s{0,}\d{1,4}\s{0,}\]{1,}", # (Billboard Hot 100)
+    r"(?i)\[{1,}\s{0,}Rated\s{1}\w+\s{0,1}\]{1,}", # (Rated PG)
+    r"(?i)\[{1,}\s{0,}HD\s{1}\w+\s{0,1}\]{1,}",  # (HD Version)
+    r"(?i)\[{1,}\s{0,}(?:Music)?\s{0,}?(?:Remastered)?\s{0,}?(?:Music)?\s{0,}?O[f]{0,2}icial\s{1,}\s{0,}(?:Music)?\s{0,}?(?:Video)?\s{0,}?(?:Remastered)?\s{0,}?\]{1,}",     # (Official Music Video Remastered)
+    r"(?i)\[{1,}\s{0,}(?:Officially)?\s{0,}?(?:Out)?\s{0,}?Now\s{0,}\]{1,}",  # (OUT NOW)
+    r"(?i)\[{1,}\s{0,}(?:Your)?\s{0,}?(?:Choice)?\s{0,}?(?:Top)?\s{0,}?\d{1,4}\s{0,}\]{1,}",     # (Your Choice Top 10)
+    r"(?i)\[{1,}\s{0,}(?:\w+\W+){0,3}\s{0,}Chart[s]{0,1}\s{0,}\]{1,}", # (UK BBC CHART)
+    r"(?i)\[{1,}(?:New)?\s{0,}?\s{0,}(?:HD)?\s{0,}?\s{0,}Version\s{0,}\]{1,}",  # (New Version)
+    r"(?i)\[{1,}\s{0,}O[f]{0,2}icial\s{1,}(?:Video)?\s{0,}?\s{0,1}[-]{1,}\s{0,1}\d{4}\s{0,}\]{1,}",   # (Official Video - 1996)
+    r"(?i)\[{1,}\s{0,}Set\s{0,1}(?:Rip)?\s{0,}?\]{1,}", # (Set rip)
+    r"(?i)\[{1,}\d{4}\s{0,}?(?:Remaster)?\s{0,}\]{1,}", # (2018 Remaster)
+    r"(?i)\[{1,}\s{0,}Stereo\s{0,1}?(?:Version)?\s{0,}\]{1,}", #(Stereo Version)
+    r"(?i)\[{1,}\s{0,}((\b\d{1,2}\D{0,3})?\b(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|(Nov|Dec)(?:ember)?)\D?)(\d{1,2}(st|nd|rd|th)?)?((\s*[,.\-\/]\s*)\D?)?\s*((19[0-9]\d|20\d{2})|\d{2})*\s{0,}\]{1,}", # (July 2019)
+    r"(?i)\[{1,}\s{0,}(?:Best)?\s{0,}?\s{0,}\s{0,}(?:Songs)?\s{0,}?((\b\d{1,2}\D{0,3})?\b(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|(Nov|Dec)(?:ember)?)\D?)(\d{1,2}(st|nd|rd|th)?)?((\s*[,.\-\/]\s*)\D?)?\s*((19[0-9]\d|20\d{2})|\d{2})*\s{0,}\]{1,}", # (BEST SONGS Month 2019)
+    r"(?i)\[{1,}\s{0,}(?:Best)?\s{0,}?\s{0,}\s{0,}(?:Songs)?\s{0,}?\d{4}\s{0,}\]{1,}", # Best Songs 2020
+    r"(?i)\[{1,}\s{0,}(?:\w+\W+){1}\s{0,}\]{1,}", # (IMPOSSIBLE!!!)
+    r"(?i)\[{1,}\s{0,}(?:\w+\W+){1}\s{0,}\s{0,1}Remixes\s{0,1}\]{1,}", # (The Remixes)
+    r"(?i)\[{1,}\s{0,}(?:\w+\W+){1,6}\s{0,}\s{0,1}Lip[-]{0,1}\s{0,1}Sync\s{0,1}\]{1,}", # (The Victoria’s Secret Angels Lip Sync)
+    r"^\s{0,}\(([^\)]+)\)",  # (Patti) LaBelle - Lady Marmalade HD 0815007
+    r"(?i)\[{1,}\s{0,}(?:Officially)?\s{0,}?(?:Out\W+)?\s{0,}?Now\W+\s{0,}\]{1,}", #  (OUT NOW!) 
+    r"(?i)\[{1,}\s{0,}Sub[s]{0,1}[.]{0,1}\s{0,}\w+\W{0,1}\s{0,}\]{1,}", # (Sub. Español)
+    r"(?i)\[{1,}\s{0,}\w+\W{0,1}\s{0,}Subtitles{0,1}\s{0,}\w+\W{0,1}\s{0,}\]{1,}",   # (English Subtitles) - (Subtitles Spanish)
+    r"(?i)\[{1,}\s{0,}(?:4K)?\s{0,}?\s{0,}(?:Official)?\s{0,}?\s{0,}(?:4K)?\s{0,}?\s{0,}Video[c]{0,1}[l]{0,1}[i]{0,1}[p]{0,1}\s{0,}(?:Clip)?\s{0,}?\]{1,}", #  ( 4K Official Videoclip )
+    r"(?i)\[{1,}\s{0,}(?:Audio)?\s{0,}?\s{0,}(?:Official)?\s{0,}?\s{0,}(?:Video)?\s{0,}?\s{0,}Clip\s{0,}?\]{1,}",     # (Audio Clip)
+    r"(?i)\[{1,}\s{0,}(?:Animated)?\s{0,}?\s{0,}(?:Cover)?\s{0,}?\s{0,}Art\s{0,}(?:[-]{0,}Cover)?\s{0,}?\s{0,}\s{0,}?\]{1,}", # (Animated Cover Art)
+    r"(?i)\[{1,}\s{0,}Taken{0,}\s{1,}From\s{0,}.*\]{1,}", # (Taken from ASOT 2016)
+    r"\[{1,}\W+\]{1,}", # (◕,,,◕)
+    r"(?i)\[{1,}\s{0,}(?:\w+\W+){0,3}\s{0,}Film\s{0,}\]{1,}", # (The Short Film)
+    r"(?i)\[{1,}\s{0,}(?:\w+\W+){0,3}\s{0,}Remode\s{0,}\]{1,}", # (KAAZE Remode)
+    r"(?i)\[{1,}\s{0,}(?:OUT)?\s{0,}?\s{0,}\s{0,}(?:NOW)?\s{0,}?((\b\d{1,2}\D{0,3})?\b(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|(Nov|Dec)(?:ember)?)\D?)(\d{1,2}(st|nd|rd|th)?)?((\s*[,.\-\/]\s*)\D?)?\s*((19[0-9]\d|20\d{2})|\d{2})*\s{0,}\]{1,}", # (OUT AUGUST 28)
+    r"(?i)\[{1,}\s{0,}(?:OUT)?\s{0,}?\s{0,}\s{0,}(?:ON)?\s{0,}?((\b\d{1,2}\D{0,3})?\b(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|(Nov|Dec)(?:ember)?)\D?)(\d{1,2}(st|nd|rd|th)?)?((\s*[,.\-\/]\s*)\D?)?\s*((19[0-9]\d|20\d{2})|\d{2})*\s{0,}\]{1,}",   # (OUT ON AUGUST 28) 
+    r"(?i)\[{1,}\s{0,}((\b\d{1,2}\D{0,3})?\b(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|(Nov|Dec)(?:ember)?)\D?)(\d{1,2}(st|nd|rd|th)?)?((\s*[,.\-\/]\s*)\D?)?\s*((19[0-9]\d|20\d{2})|\d{2})*(?:OUT)?\s{0,}?\s{0,}\s{0,}(?:NOW)?\s{0,}?\s{0,}\]{1,}",     # (AUGUST 28 OUT NOW) 
+    r"(?i)\[{1,}\s{0,1}Out\s{1}on\s{1,}\s{0,}(\s{0,1}\b\w+){1,3}\s{0,}\]",  # (Out on Ophelia Records)
+    r"(?i)\[{1,}\s{0,}O[f]{0,2}icial\s{1,}\s{0,}(?:Movie)?\s{0,}(?:Trailer)?\s{0,}?\s{0,}(?:Teaser)?\s{0,}?\s{0,}?\]{1,}",    # (Official Teaser)    # (Official Movie Trailer)
+    r"(?i)\[{1,}\s{0,}\s{0,}(?:O[f]{1,2}icial)?\s{0,}?Movie\s{0,}\s{0,}(?:Teaser)?\s{0,}?\s{0,}(?:Trailer)?\s{0,}?\]{1,}", # (Official Movie Trailer) # (Movie Teaser )
+    r"(?i)\[{1,}\s{0,}\s{0,}(?:Free)?\s{0,}?Release\s{0,}\s{0,}\]{1,}",  # ( Free Release )
+    r"(?i)\[{1,}\s{0,}\s{0,}(?:Audio)?\s{0,}?Only\s{0,}(?:Audio)?\s{0,}?\s{0,}\]{1,}", # (audio only) 
+    r"(?i)\[{1,}\s{0,}\s{0,}Audio\s{0,}(?:Snippet)?\s{0,}?\s{0,}\]{1,}",  # (audio snippet)
+    r"(?i)\[{1,}\s{0,}\s{0,}Full\s{0,}(?:EP)?\s{0,}?\s{0,}(?:Track)?\s{0,}?\s{0,}\]{1,}",    # (Full EP)     # (FULL TRACK)
+    r"(?i)\[{1,}\s{0,}\s{0,}Full\s{1,}Track\s{0,}[-]{0,1}\s{0,}?\s{0,}\s{0,}(?:\W+OUT NOW\W+)\s{0,}\]{1,}", # (FULL TRACK - *OUT NOW*)
+    r"(?i)\[{1,}\s{0,}\s{0,}\s{0,}(?:4K)?\s(?:Official)?\s{0,}Videoclip\s{0,}\]{1,}",  # ( 4K Official Videoclip )
+    r"(?i)\[{1,}\s{0,}\s{0,}\s{0,}(?:Music)?\s(?:Video)?\s{0,}HD\s{0,}\]{1,}", # (Music Video HD)
+    r"(?i)\[{1,}\s{0,}\s{0,}(?:\w+\W+){1,2}Boot\s{0,}\]{1,}", # (Smookie Illson Boot)
+    r"(?i)\[{1,}\s{0,}\s{0,}(?:\w+\W+){1,2}\s{0,}Boot\s{0,}\]{1,}",  # (Smookie Illson Boot)
+    r"(?i)\[{1,}\s{0,}Committed\s{1,}To\s{1,}.*\s{0,}\]{1,}", # (Committed To Sparkle Motion) 
+    r"(?i)\[{1,}\s{0,}Full\s{1,}Album\s{0,}\]{1,}", # (full album)
+    r"(?i)\[{1,}\s{0,}O[f]{0,2}icial\s{1,}\s{0,}(?:Movie)?\s{0,}(?:Trailer)?\s{0,}?\s{0,}(?:Preview)?\s{0,}?\s{0,}?\]{1,}",   # (Official Preview )
+    r"(?i)\[{1,}\s{0,}O[f]{0,2}icial\s{1,}\s{0,}(?:Movie)?\s{0,}(?:Trailer)?\s{0,}?\s{0,}(?:HD)?\s{0,}?\s{0,}\s{0,}(?:HQ)?\s{0,}?\s{0,}(?:Preview)?\s{0,}?\s{0,}?\]{1,}",     # (Official HQ Preview)
+    r"(?i)\[{1,}\s{0,}Original(?:Movie)?\s{0,}(?:Trailer)?\s{0,}?\s{1,}(?:Song)\s{0,}?\s{0,}\s{0,}(?:HQ)?\s{0,}?\s{0,}(?:Preview)?\s{0,}?\s{0,}?\]{1,}",     # (Original Song)
+    r"(?i)\[{1,}\s{0,}O[f]{0,2}icial\s{1,}\s{0,}(?:Movie)?\s{0,}(?:Lyric)?\s{0,}?\s{0,}(?:HD)?\s{0,}?\s{0,}\s{0,}(?:Video)?\s{0,}?\s{0,}(?:HD)?\s{0,}?\s{0,}?\]{1,}",     # (Official Lyric Video HD)
+    r"(?i)\[{1,}\s{0,}Making\s{1,}of\s{0,}\]{1,}", # (Making Of)
+    r"(?i)\[{1,}\s{0,}O[f]{0,2}icial\s{1,}\s{0,}(?:Visual)?\s{0,}?\]{1,}",  # (Official Visual) 
+    r"(?i)\[{1,}\s{0,}Uncensored\s{1,}\s{0,}(?:HD)?\s{0,}?\s{0,}(?:Official)?\s{0,}?\s{0,}(?:HD)?\s{0,}?\s{0,}(?:\w+\W+){1}\s{0,}(?:Version)?\s{0,}?\]{1,}", # (Uncensored HD Official UK Version)
+    r"(?i)\[{1,}\s{0,}Out\s{1,}on\s{0,}(?:\w+\W+){1,3}\s{0,}(?:\d{4}\s{0,}?\s{0,})?\s{0,}\s{0,}?((\b\d{1,2}\D{0,3})?\b(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|(Nov|Dec)(?:ember)?)\D?)(\d{1,2}(st|nd|rd|th)?)?((\s*[,.\-\/]\s*)\D?)?\s*((19[0-9]\d|20\d{2})|\d{2})*\s{0,}\]{1,}", # (Out On OZ Records 19 April ) # (Out On OZ Records on March 19th)
+    r"(?i)\[{1,}\s{0,1}Part\s{0,}(\s{0,1}\b\w+){1,3}\s{0,}\]{1,}", # (Part One)
+    r"(?i)\[{1,}\s{0,1}(\s{0,1}\b\w+){0,3}\s{0,}Out\s{0,}\W+Now\W+(\s{0,1}\b\w+){0,3}\s{0,}\]{1,}", # (Monsters 8 out now!)
+    r"(?i)\[{1,}\s{0,1}Free\s{1,}DL\s{0,}\]{1,}", # (Free DL) 
+    r"(?i)\[{1,}\s{0,}O[f]{0,2}icial\s{1,}(\s{0,1}\b\w+){0,3}\s{0,}Compilation{0,}\s{0,}\]{1,}", # (Official Music Video Compilation)
+    r"(?i)\[{1,}\s{0,}Clip\s{1,}Of{1,2}icial\s{0,}\]{1,}", # (clip official)
+    r"(?i)\[{1,}\s{0,}Director's\s{1,}Cut\s{0,}\]{1,}", # (Director's Cut)
+    r"(?i)\[{1,}\s{0,}Tour\s{1,}Trailer\s{0,}\]{1,}", # (Tour Trailer)
+    r"(?i)\[{1,}\s{0,}English\s{1,}Version\s{0,}\]{1,}", # (English Version)
+    r"(?i)\[{1,}\s{0,}Tour\s{1,}Trailer\s{0,}(\s{0,1}\b\w+){0,3}\s{0,}\]{1,}", # (Tour Trailer)
+    r"(?i)\[{1,}\s{0,}Of{1,2}ficial\s{1,}Video\s{0,}(\s{0,1}\b\w+){0,3}\s{0,}\]{1,}", # (Official Video Live at Freshtival)
+    r"(?i)\[{1,}\s{0,}Of{1,2}ficial\s{1,}(\s{0,1}\b\w+){0,3}\s{0,}Video\s{0,}(\s{0,1}\b\w+){0,3}\s{0,}\]{1,}", # (Official Short Video Version HD)
+    r"(?i)\[{1,}\s{0,}Full\s{1,}Version\s{0,}\]{1,}", # (Full Version)
+    r"(?i)\[{1,}\s{0,}Demo\s{1,}Clip\s{0,}\]{1,}", # (demo clip)
+    r"(?i)\[{1,}\s{0,}Clip\s{1,}Of{1,2}iciel\s{0,}\]{1,}", # (Clip Officiel)
+    r"(?i)\[{1,}\s{0,}#(\s{0,1}\b\w+){1}\s{0,}\]{1,}", # (#360RA)
+    r"(?i)\[{1,}\s{0,}Video\s{0,}(\s{0,1}\b\w+){0,3}\s{0,}Version{0,}\s{0,}\]{1,}", # Bomfunk MC's - Freestyler (Video Original Version)
+    r"\s{1,}OUT\s{1,}NOW", # (The Asylum OUT NOW)
+    r"(?i)\[{1,}\s{0,}OUT\s{1,}\d{2}[.]{1}\d{2,4}\s{0,}\]{1,}",  # (OUT 10.24)
+    r"(?i)\bAudio\b", # Word Audio
+    r"\s{0,}\/\s{0,}(?=\])", # Okay (Blush Remix / )
+    r"\s{0,}\-\s{0,}(?=\])" # Clean up after dash
 ]
 
 def clean_brackets(track):
@@ -343,6 +532,41 @@ def clean_brackets(track):
     
     return track
 
+special_seperators = [r"[|]"]
+multiple_seperators = [r"\s{1,}-\s{1,}"]
+
+def replace_special_seperators(track):
+    matches = [] 
+    
+    for x in special_seperators:
+            pattern = re.compile(x)
+            for match in re.finditer(pattern, track):
+                matches.append(match.start())
+    
+    if matches:
+        matches = sorted(matches)
+
+    if len(matches) > 1:
+        track = track.replace(track[matches[0]],"-", 1)
+
+    return track
+
+def clean_second_dash(track):
+    matches = []
+
+    for x in multiple_seperators:
+        pattern = re.compile(x)
+        for match in re.finditer(pattern,track):
+            matches.append(match.start())
+       
+    if matches:
+        if len(matches) > 1:
+           temporary_check_string = track[matches[-1]:]
+           count_words = len(re.findall(r'\w+', temporary_check_string.strip()))
+           if count_words < 3:
+            track = track[:matches[-1]]
+        
+    return track
 
 CLEAN_EXTRAS = [
     r"(?i)\s{1,}(?<!^)[(]{1,}Mixed by.*[)]{1,}\s{0,}$",
@@ -384,200 +608,217 @@ def clean_extra_from_title(track):
     return track
 
 CLEAN_PARENTHESIS = [
-    r"(?i)(?<!^)[(]{1,}Official\s{0,}(?:Music)?\s{0,}Video[)]{1,}",
-    r"(?i)(?<!^)[(]{1,}Official\s{0,}(?:Music)?\s{0,}Visualizer[)]{1,}",
-    r"(?i)(?<!^)[(]{1,}(?:Music)?\s{0,}Visualizer[)]{1,}",
-    r"(?i)(?<!^)[(]{1,}(?:Audio)?\s{0,}?\s{0,}(?:With)?\s{0,}?\s{0,}Lyrics\s{0,}?\s{0,}(?:Included)?\s{0,}?\s{0,}[)]{1,}",    # Lyrics   # Audio with Lyrics     # Lyrics included  # With Lyrics
-    r"(?i)(?<!^)[(]{1,}(?:Official)?\s{0,}?\s{0,}(?:)?\s{0,}?\s{0,}Lyrics\s{0,}?\s{0,}(?:Video)?\s{0,}?\s{0,}[)]{1,}",  # Official Lyrics Video
-    r"(?i)(?<!^)[(]{1,}(?:Official)?\s{0,}?\s{0,}(?:)?\s{0,}?\s{0,}Lyric\s{0,}?\s{0,}(?:Video)?\s{0,}?\s{0,}[)]{1,}",   # Official Lyric Video
-    r"(?i)(?<!^)[(]{1,}(?:Official)?\s{0,}?\s{0,}(?:)?\s{0,}?\s{0,}Audio\s{0,}?\s{0,}(?:\d{4})?\s{0,}?\s{0,}[)]{1,}",   # Audio # Official Audio # Official Audio [date]
-    r"(?i)(?<!^)[(]{1,}(?:Official)?\s{0,}?\s{0,}(?:)?\s{0,}?\s{0,}Visualizer\s{0,}?\s{0,}[)]{1,}",  # Official Visualizer # Visualizer
-    r"(?i)(?<!^)[(]{1,}(?:Version)?\s{0,}?\s{0,}(?:Release)?\s{0,}?\s{0,}\d{4}\s{0,}?\s{0,}(?:Version)?\s{0,}?\s{0,}[)]{1,}",  # Just a Year
-    r"(?i)(?<!^)[(]{1,}\s{0,}(?:Cover)?\s{0,}\s{0,}(?:Album)?\s{0,}\s{0,}Art\s{0,}[)]{1,}", # Cover or Cover Art or Cover Album Art
-    r"(?i)(?<!^)[(]{1,}\s{0,}(?:Album)?\s{0,}\s{0,}(?:Cover)?\s{0,}\s{0,}Art\s{0,}[)]{1,}", # Album Cover Art
-    r"(?i)(?<!^)[(]{1,}\s{0,}(?:Album)?\s{0,}\s{0,}(?:Art)?\s{0,}\s{0,}Cover\s{0,}[)]{1,}", # Album Art Cover
-    r"(?i)(?<!^)[(]{1,}\s{0,}(?:Official)?\s{0,}\s{0,}(?:HD)?\s{0,}\s{0,}(?:HQ)?\s{0,}\s{0,}(?:High Definition)?\s{0,}\s{0,}Video\s{0,}[)]{1,}", # Official HD Video # Official Video HD # HD Video  # HQ
-    r"(?i)(?<!^)[(]{1,}\s{0,}(?:360°)?\s{0,}\s{0,}(?:360)?\s{0,}\s{0,}(?:Official)?\s{0,}\s{0,}Visualizer\s{0,}[)]{1,}", # Official Visualizer  # (360° Visualizer)
-    r"(?i)(?<!^)[(]{1,}\s{0,}(?:Official)?\s{0,}\s{0,}(?:Lyric)?\s{0,}\s{0,}(?:Music)?\s{0,}\s{0,}Video\s{0,}[)]{1,}",  # Lyric Video # Our Lyric Video # Music Video
-    r"(?i)(?<!^)[(]{1,}\s{0,}Bass\s{0,}\s{0,}Boosted\s{0,}[)]{1,}", # Bass Boosted
-    r"(?i)(?<!^)[(]{1,}\s{0,}Official.*Version\s{0,}[)]{1,}", # Official Whatever Version
-    r"(?i)(?<!^)[(]{1,}\s{0,}Official\s{1,}Explicit.*\s{0,}[)]{1,}", # Official Explicit Whatever
-    r"(?i)(?<!^)[(]{1,}\s{0,}Video\s{0,}[)]{1,}", # Video  
-    r"(?i)(?<!^)[(]{1,}\s{0,}Live\s{1,}(?:from)?\s{0,}\s{0,}(?:at)?\s{0,}\s{0,}.*\s{0,}[)]{1,}",  # Live from or at 
-    r"(?i)(?<!^)[(]{1,}(?:Explicit)?\s{0,}?\s{0,}(?:Static)?\s{0,}?\s{0,}Video\s{0,}?\s{0,}(?:Static)?\s{0,}?\s{0,}[)]{1,}",     # Static Video
-    r"(?i)(?<!^)[(]{1,}\s{0,}Explicit\s{0,}[)]{1,}", # Explicit
-    r"(?i)(?<!^)[(]{1,}\s{0,}ID\s{0,}[)]{1,}", # ID 
-    r"(?i)(?<!^)[(]{1,}DJ[-\s]{1,}Set.*\s{0,}[)]{1,}", # Dj-Set
-    r"(?i)(?<!^)[(]{1,}\s{0,}\s{0,}\s{0,}(?:High)?\s{0,}\s{0,}(?:Best)?\s{0,}\s{0,}Quality\s{0,}[)]{1,}",  # Best Quality - High Quality
-    r"(?i)(?<!^)[(]{1,}\s{0,}\s{0,}\s{0,}From\s{0,}.*[)]{1,}",  # From ...
-    r"(?i)(?<!^)[(]{1,}(?:Official)?\s{0,}?\s{0,}(?:4K)?\s{0,}?\s{0,}Video\s{0,}[)]{1,}",  # Official 4K Video
-    r"(?i)(?<!^)[(]{1,}Official\s{0,}(?:Song)?\s{0,}?\s{0,}[)]{1,}", # Official Song
-    r"(?i)(?<!^)[(]{1,}Oficial\s{0,}[)]{1,}", # Official misworded 
-    r"(?i)(?<!^)[(]{1,}\s{0,}Directed\s{1,}by\s{0,}.*[)]{1,}",  # Directed by 
-    r"(?i)(?<!^)[(]{1,}\s{0,}Mix[e]{0,}[d]{0,}\s{1,}by\s{0,}.*[)]{1,}",  # Mixed by 
-    r"(?i)(?<!^)[(]{1,}\s{0,}(?:360°)?\s{0,}\s{0,}(?:360)?\s{0,}\s{0,}(?:Official)?\s{0,}\s{0,}Video\s{0,}[)]{1,}",   # 360 Video
-    r"(?i)(?<!^)[(]{1,}\s{0,}Dir[.]{1,}\s{1,}by\s{0,}.*[)]{1,}", # Dir. by
-    r"(?i)(?<!^)[(]{1,}\s{0,}Dir[.]{1,}\s{0,}.*[)]{1,}", # Dir.
-    r"(?i)(?<!^)[(]{1,}\s{0,}(?:\b\w+){0,1}\s+Translation\s{0,}[)]{1,}", # any word + Translation
-    r"(?i)(?<!^)[(]{1,}\s{0,}4K\s{0,}[)]{1,}", # 4K
-    r"(?i)(?<!^)[(]{1,}\s{0,}Presents\s{1,}.*\s{0,}[)]{1,}", # Presents
-    r"(?i)(?<!^)[(]{1,}\s{0,}(?:Vevo\s{1,})?\s{0,}\s{0,}Presents\s{1,}.*\s{0,}[)]{1,}",  # Vevo Presents
-    r"(?i)(?<!^)[(]{1,}(?:Video)?\s{0,}?\s{0,}Time[-]{0,1}lapse\s{0,}?\s{0,}(?:Video)?\s{0,}?\s{0,}(?:Vid[.]{0,1})?\s{0,}?\s{0,}[)]{1,}",  # Timelapse or Time-lapse + optional Video
-    r"(?i)(?<!^)[(]{1,}(?:Animated)?\s{0,}?\s{0,}Video\s{0,}?\s{0,}(?:Animated)?\s{0,}?\s{0,}[)]{1,}", # Animated Video
-    r"(?i)(?<!^)[(]{1,}(?:Animated)?\s{0,}?\s{0,}Vid[.]{0,1}\s{0,}?\s{0,}(?:Animated)?\s{0,}?\s{0,}[)]{1,}", # Animated Vid
-    r"(?i)(?<!^)[(]{1,}(?:Lip)?\s{0,}?\s{0,}(?:Lip-)?\s{0,}?\s{0,}Sync\s{0,}[)]{1,}",  # Lip Sync
-    r"(?i)(?<!^)[(]{1,}(?:Short)?\s{0,}?\s{0,}Film\s{0,}[)]{1,}",  # Short Film 
-    r"(?i)(?<!^)[(]{1,}\s{0,}(?:Late)?\s{0,}?\s{0,}(?:Night)?\s{0,}?\s{0,}Session\s{0,}[)]{1,}", # Late Night Session
-    r"(?i)(?<!^)[(]{1,}\s{0,}(?:360°)?\s{0,}\s{0,}(?:360)?\s{0,}\s{0,}(?:Official)?\s{0,}\s{0,}Visualiser\s{0,}[)]{1,}", # (Visualiser)
-    r"(?i)(?<!^)[(]{1,}\s{0,}(?:Royalty)?\s{0,}\s{0,}(?:Free)?\s{0,}\s{0,}Music\s{0,}[)]{1,}", # (Royalty Free Music)
-    r"(?i)(?<!^)[(]{1,}\s{0,}(?:Fan)?\s{0,}\s{0,}(?:Made)?\s{0,}\s{0,}(?:Memories)?\s{0,}\s{0,}Video\s{0,}[)]{1,}", # (Fan Memories Video)
-    r"(?i)(?<!^)[(]{1,}\s{0,}(?:Fan[-]{0,}Made)?\s{0,}\s{0,}Video\s{0,}[)]{1,}", #Fan-Made Video
-    r"(?i)(?<!^)[(]{1,}\s{0,}\s{0,}(?:Lyrics)?\s{0,}\s{0,}(?:Lyrics\s{1,}[+]{1,}\s{0,})?\s{0,}\s{0,}(?:\b\w+){0,1}\s+Translation\s{0,}[)]{1,}", # (Lyrics + English Translation)
-    r"(?i)(?<!^)[(]{1,}(?:Unreleased)?\s{0,}?\s{0,}(?:4K)?\s{0,}?\s{0,}Video\s{0,}[)]{1,}",  # Unreleased
-    r"(?i)(?<!^)[(]{1,}(?:Unreleased)?\s{0,}?\s{0,}(?:Fan)?\s{0,}?\s{0,}(?:Made)?\s{0,}?\s{0,}(?:Fan-Made)?\s{0,}?\s{0,}Video\s{0,}[)]{1,}", # Unreleased
-    r"(?i)(?<!^)[(]{1,}\d{4}\s{0,}?\s{0,}\s{0,}(?:Mashup)?\s{0,}[)]{1,}",  # (2018 Mashup)
-    r"(?i)(?<!^)[(]{1,}\s{0,}(?:ID)?\s{0,}\s{0,}HQ\s{0,}\s{0,}[)]{1,}",  # (HQ)
+    r"(?i)[(]{1,}Official\s{0,}(?:Music)?\s{0,}Video[)]{1,}",
+    r"(?i)[(]{1,}Official\s{0,}(?:Music)?\s{0,}Visualizer[)]{1,}",
+    r"(?i)[(]{1,}(?:Music)?\s{0,}Visualizer[)]{1,}",
+    r"(?i)[(]{1,}(?:Audio)?\s{0,}?\s{0,}(?:With)?\s{0,}?\s{0,}Lyrics\s{0,}?\s{0,}(?:Included)?\s{0,}?\s{0,}[)]{1,}",    # Lyrics   # Audio with Lyrics     # Lyrics included  # With Lyrics
+    r"(?i)[(]{1,}(?:Official)?\s{0,}?\s{0,}(?:)?\s{0,}?\s{0,}Lyrics\s{0,}?\s{0,}(?:Video)?\s{0,}?\s{0,}[)]{1,}",  # Official Lyrics Video
+    r"(?i)[(]{1,}(?:Official)?\s{0,}?\s{0,}(?:)?\s{0,}?\s{0,}Lyric\s{0,}?\s{0,}(?:Video)?\s{0,}?\s{0,}[)]{1,}",   # Official Lyric Video
+    r"(?i)[(]{1,}(?:Official)?\s{0,}?\s{0,}(?:)?\s{0,}?\s{0,}Audio\s{0,}?\s{0,}(?:\d{4})?\s{0,}?\s{0,}[)]{1,}",   # Audio # Official Audio # Official Audio [date]
+    r"(?i)[(]{1,}(?:Official)?\s{0,}?\s{0,}(?:)?\s{0,}?\s{0,}Visualizer\s{0,}?\s{0,}[)]{1,}",  # Official Visualizer # Visualizer
+    r"(?i)[(]{1,}(?:Version)?\s{0,}?\s{0,}(?:Release)?\s{0,}?\s{0,}\d{4}\s{0,}?\s{0,}(?:Version)?\s{0,}?\s{0,}[)]{1,}",  # Just a Year
+    r"(?i)[(]{1,}\s{0,}(?:Cover)?\s{0,}\s{0,}(?:Album)?\s{0,}\s{0,}Art\s{0,}[)]{1,}", # Cover or Cover Art or Cover Album Art
+    r"(?i)[(]{1,}\s{0,}(?:Album)?\s{0,}\s{0,}(?:Cover)?\s{0,}\s{0,}Art\s{0,}[)]{1,}", # Album Cover Art
+    r"(?i)[(]{1,}\s{0,}(?:Album)?\s{0,}\s{0,}(?:Art)?\s{0,}\s{0,}Cover\s{0,}[)]{1,}", # Album Art Cover
+    r"(?i)[(]{1,}\s{0,}(?:Official)?\s{0,}\s{0,}(?:HD)?\s{0,}\s{0,}(?:HQ)?\s{0,}\s{0,}(?:High Definition)?\s{0,}\s{0,}Video\s{0,}[)]{1,}", # Official HD Video # Official Video HD # HD Video  # HQ
+    r"(?i)[(]{1,}\s{0,}(?:360°)?\s{0,}\s{0,}(?:360)?\s{0,}\s{0,}(?:Official)?\s{0,}\s{0,}Visualizer\s{0,}[)]{1,}", # Official Visualizer  # (360° Visualizer)
+    r"(?i)[(]{1,}\s{0,}(?:Official)?\s{0,}\s{0,}(?:Lyric)?\s{0,}\s{0,}(?:Music)?\s{0,}\s{0,}Video\s{0,}[)]{1,}",  # Lyric Video # Our Lyric Video # Music Video
+    r"(?i)[(]{1,}\s{0,}Bass\s{0,}\s{0,}Boosted\s{0,}[)]{1,}", # Bass Boosted
+    r"(?i)[(]{1,}\s{0,}Official.*Version\s{0,}[)]{1,}", # Official Whatever Version
+    r"(?i)[(]{1,}\s{0,}Official\s{1,}Explicit.*\s{0,}[)]{1,}", # Official Explicit Whatever
+    r"(?i)[(]{1,}\s{0,}Video\s{0,}[)]{1,}", # Video  
+    r"(?i)[(]{1,}\s{0,}Live\s{1,}(?:from)?\s{0,}\s{0,}(?:at)?\s{0,}\s{0,}.*\s{0,}[)]{1,}",  # Live from or at 
+    r"(?i)[(]{1,}(?:Explicit)?\s{0,}?\s{0,}(?:Static)?\s{0,}?\s{0,}Video\s{0,}?\s{0,}(?:Static)?\s{0,}?\s{0,}[)]{1,}",     # Static Video
+    r"(?i)[(]{1,}\s{0,}Explicit\s{0,}[)]{1,}", # Explicit
+    r"(?i)[(]{1,}\s{0,}ID\s{0,}[)]{1,}", # ID 
+    r"(?i)[(]{1,}DJ[-\s]{1,}Set.*\s{0,}[)]{1,}", # Dj-Set
+    r"(?i)[(]{1,}\s{0,}\s{0,}\s{0,}(?:High)?\s{0,}\s{0,}(?:Best)?\s{0,}\s{0,}Quality\s{0,}[)]{1,}",  # Best Quality - High Quality
+    r"(?i)[(]{1,}\s{0,}\s{0,}\s{0,}From\s{0,}.*[)]{1,}",  # From ...
+    r"(?i)[(]{1,}(?:Official)?\s{0,}?\s{0,}(?:4K)?\s{0,}?\s{0,}Video\s{0,}[)]{1,}",  # Official 4K Video
+    r"(?i)[(]{1,}Official\s{0,}(?:Song)?\s{0,}?\s{0,}[)]{1,}", # Official Song
+    r"(?i)[(]{1,}Oficial\s{0,}[)]{1,}", # Official misworded 
+    r"(?i)[(]{1,}\s{0,}Directed\s{1,}by\s{0,}.*[)]{1,}",  # Directed by 
+    r"(?i)[(]{1,}\s{0,}Mix[e]{0,}[d]{0,}\s{1,}by\s{0,}.*[)]{1,}",  # Mixed by 
+    r"(?i)[(]{1,}\s{0,}(?:360°)?\s{0,}\s{0,}(?:360)?\s{0,}\s{0,}(?:Official)?\s{0,}\s{0,}Video\s{0,}[)]{1,}",   # 360 Video
+    r"(?i)[(]{1,}\s{0,}Dir[.]{1,}\s{1,}by\s{0,}.*[)]{1,}", # Dir. by
+    r"(?i)[(]{1,}\s{0,}Dir[.]{1,}\s{0,}.*[)]{1,}", # Dir.
+    r"(?i)[(]{1,}\s{0,}(?:\b\w+){0,1}\s+Translation\s{0,}[)]{1,}", # any word + Translation
+    r"(?i)[(]{1,}\s{0,}4K\s{0,}[)]{1,}", # 4K
+    r"(?i)[(]{1,}\s{0,}Presents\s{1,}.*\s{0,}[)]{1,}", # Presents
+    r"(?i)[(]{1,}\s{0,}(?:Vevo\s{1,})?\s{0,}\s{0,}Presents\s{1,}.*\s{0,}[)]{1,}",  # Vevo Presents
+    r"(?i)[(]{1,}(?:Video)?\s{0,}?\s{0,}Time[-]{0,1}lapse\s{0,}?\s{0,}(?:Video)?\s{0,}?\s{0,}(?:Vid[.]{0,1})?\s{0,}?\s{0,}[)]{1,}",  # Timelapse or Time-lapse + optional Video
+    r"(?i)[(]{1,}(?:Animated)?\s{0,}?\s{0,}Video\s{0,}?\s{0,}(?:Animated)?\s{0,}?\s{0,}[)]{1,}", # Animated Video
+    r"(?i)[(]{1,}(?:Animated)?\s{0,}?\s{0,}Vid[.]{0,1}\s{0,}?\s{0,}(?:Animated)?\s{0,}?\s{0,}[)]{1,}", # Animated Vid
+    r"(?i)[(]{1,}(?:Lip)?\s{0,}?\s{0,}(?:Lip-)?\s{0,}?\s{0,}Sync\s{0,}[)]{1,}",  # Lip Sync
+    r"(?i)[(]{1,}(?:Short)?\s{0,}?\s{0,}Film\s{0,}[)]{1,}",  # Short Film 
+    r"(?i)[(]{1,}\s{0,}(?:Late)?\s{0,}?\s{0,}(?:Night)?\s{0,}?\s{0,}Session\s{0,}[)]{1,}", # Late Night Session
+    r"(?i)[(]{1,}\s{0,}(?:360°)?\s{0,}\s{0,}(?:360)?\s{0,}\s{0,}(?:Official)?\s{0,}\s{0,}Visualiser\s{0,}[)]{1,}", # (Visualiser)
+    r"(?i)[(]{1,}\s{0,}(?:Royalty)?\s{0,}\s{0,}(?:Free)?\s{0,}\s{0,}Music\s{0,}[)]{1,}", # (Royalty Free Music)
+    r"(?i)[(]{1,}\s{0,}(?:Fan)?\s{0,}\s{0,}(?:Made)?\s{0,}\s{0,}(?:Memories)?\s{0,}\s{0,}Video\s{0,}[)]{1,}", # (Fan Memories Video)
+    r"(?i)[(]{1,}\s{0,}(?:Fan[-]{0,}Made)?\s{0,}\s{0,}Video\s{0,}[)]{1,}", #Fan-Made Video
+    r"(?i)[(]{1,}\s{0,}\s{0,}(?:Lyrics)?\s{0,}\s{0,}(?:Lyrics\s{1,}[+]{1,}\s{0,})?\s{0,}\s{0,}(?:\b\w+){0,1}\s+Translation\s{0,}[)]{1,}", # (Lyrics + English Translation)
+    r"(?i)[(]{1,}(?:Unreleased)?\s{0,}?\s{0,}(?:4K)?\s{0,}?\s{0,}Video\s{0,}[)]{1,}",  # Unreleased
+    r"(?i)[(]{1,}(?:Unreleased)?\s{0,}?\s{0,}(?:Fan)?\s{0,}?\s{0,}(?:Made)?\s{0,}?\s{0,}(?:Fan-Made)?\s{0,}?\s{0,}Video\s{0,}[)]{1,}", # Unreleased
+    r"(?i)[(]{1,}\d{4}\s{0,}?\s{0,}\s{0,}(?:Mashup)?\s{0,}[)]{1,}",  # (2018 Mashup)
+    r"(?i)[(]{1,}\s{0,}(?:ID)?\s{0,}\s{0,}HQ\s{0,}\s{0,}[)]{1,}",  # (HQ)
     r"(?i)[(]{1,}\s{0,}(?:ID)?\s{0,}\s{0,}HQ\s{0,}\s{0,}[)]{1,}", # (ID HQ) - start of string
-    r"(?i)(?<!^)[(]{1,}(?:Video)?\s{0,}?\s{0,}(?:Original)?\s{0,}?\s{0,}Version\s{0,}[)]{1,}", # (Video Original Version)
-    r"(?i)(?<!^)[(]{1,}\s{0,}HQ\s{0,}[)]{1,}", # (HQ)
-    r"(?i)(?<!^)[(]{1,}(?:Video)?\s{0,}?\s{0,}(?:Original)?\s{0,}?\s{0,}Ufficiale\s{0,}[)]{1,}", # Video Ufficiale
-    r"(?i)(?<!^)[(]{1,}(?:[^A-Za-z0-9]+Official)?\s{0,}?\s{0,}Video\s{0,}[)]{1,}", # ~Official Video
-    r"(?i)(?<!^)[(]{1,}\s{0,}HD\s{0,}[)]{1,}", # (HD)
-    r"(?i)(?<!^)[(]{1,}\s{0,}(?:On Screen)?\s{0,}?\s{0,}(?:Screen On)?\s{0,}?\s{0,}Lyrics\s{0,}?\s{0,}(?:On Screen)?\s{0,}?\s{0,}[)]{1,}",  # (ON SCREEN LYRICS)
-    r"(?i)(?<!^)[(]{1,}\s{0,}\s{0,}(?:\b\w+){0,1}\s+Ver[.]{1}\s{0,}[)]{1,}",  # (DE Ver.)
-    r"(?i)(?<!^)[(]{1,}\s{0,}(?:Official)?\s{0,}?\s{0,}Video\s{0,}(?:HD)?\s{0,}?[)]{1,}", # (Official Video HD)
-    r"(?i)(?<!^)[(]{1,}\s{0,}(?:No)?\s{0,}?\s{0,}Copyright\s{0,}(?:Music)?\s{0,}?[)]{1,}", # (No Copyright Music)
-    r"(?i)(?<!^)[(]{1,}\s{0,}(?:Our)?\s{0,}?\s{0,}Lyric\s{0,}(?:Video)?\s{0,}?[)]{1,}", # (Our Lyric Video)
-    r"(?i)(?<!^)[(]{1,}\s{0,}(?:Album[^A-Za-z0-9]+[s]{0,1})?\s{0,}?\s{0,}Version\s{0,}?[)]{1,}", # (Album Version)
-    r"(?i)(?<!^)[(]{1,}\s{0,}(?:O[f]{0,2}icial)?\s{0,}?\s{0,}Video\s{0,}(?:HD)?\s{0,}?[)]{1,}", # Official 
-    r"(?i)(?<!^)[(]{1,}\s{0,}Video\s{0,}(?:O[f]{1,2}icial)?\s{0,}?[)]{1,}",  # (Video Oficial)
-    r"(?i)(?<!^)[(]{1,}\s{0,}(?:O[f]{0,2}icial)?\s{0,}?(?:HD)?\s{0,}?\s{0,}Clip\s{0,}(?:HD)?\s{0,}?[)]{1,}", # Official Clip
-    r"(?i)(?<!^)[(]{1,}\s{0,}(?:Video)?\s{0,}?(?:HD)?\s{0,}?\s{0,}Officiel\s{0,}(?:Video)?\s{0,}?(?:HD)?\s{0,}?(?:Clip)?\s{0,}?(?:Video)?\s{0,}?[)]{1,}",    # (Clip Officiel)
-    r"(?i)(?<!^)[(]{1,}\s{0,}(?:Unreleased)?\s{0,}?\s{0,}(?:Tribute)?\s{0,}?\s{0,}(?:Music)?\s{0,}?\s{0,}Video\s{0,}[)]{1,}", # (Unreleased Tribute Music Video)
-    r"(?i)(?<!^)[(]{1,}\s{0,}(?:Unreleased)?\s{0,}?\s{0,}(?:Exclusive)?\s{0,}?\s{0,}(?:4K)?\s{0,}?\s{0,}Audio\s{0,}[)]{1,}", # (Unreleased Tribute Music Audio)
-    r"(?i)(?<!^)[(]{1,}\s{0,}(?:Exclusive)?\s{0,}?\s{0,}(?:Music)?\s{0,}?\s{0,}(?:HQ)?\s{0,}?\s{0,}Audio\s{0,}[)]{1,}", # (Exclusive Music Audio)     # (Unreleased Audio)
-    r"(?i)(?<!^)[(]{1,}\s{0,}(?:(?:\b\w+){0,2})\s{0,}(?:Exclusive)?\s{0,}?\s{0,}(?:- Official)?\s{0,}?\s{0,}(?:Music)?\s{0,}?\s{0,}Video\s{0,}[)]{1,}",  # ( 2 Words - Official Music Video)
-    r"(?i)(?<!^)[(]{1,}\s{0,}(?:\w+\W+){1,5}\s{0,}Audio\s{0,}[)]{1,}", # 1-5 Words + Audio
-    r"(?i)(?<!^)[(]{1,}\s{0,}(?:\w+\W+){1,5}\s{0,}Video\s{0,}[)]{1,}",  # 1-5 Words + Video  # (scrapped video)
-    r"(?i)(?<!^)[(]\s{0,}Remix\s{0,}[)]{1,}",  # (Remix)
-    r"(?i)(?<!^)[(]\s{0,}Dirty\s{0,}[)]{1,}",  # (Dirty)
-    r"(?i)(?<!^)[(]\s{0,}Unreleased\s{0,}[)]{1,}", # (Unreleased)
-    r"(?i)(?<!^)[(]\s{0,}New\s{0,}[)]{1,}",   # (New)
-    r"(?i)(?<!^)[(]\s{0,}Remake\s{0,}[)]{1,}",  # (Remake)
-    r"(?i)(?<!^)[(]{1,}\s{0,}\s{0,}\s{0,}Shot\s{1,}by\s{1,}.*[)]{1,}", # Shot By.....
+    r"(?i)[(]{1,}(?:Video)?\s{0,}?\s{0,}(?:Original)?\s{0,}?\s{0,}Version\s{0,}[)]{1,}", # (Video Original Version)
+    r"(?i)[(]{1,}\s{0,}HQ\s{0,}[)]{1,}", # (HQ)
+    r"(?i)[(]{1,}(?:Video)?\s{0,}?\s{0,}(?:Original)?\s{0,}?\s{0,}Ufficiale\s{0,}[)]{1,}", # Video Ufficiale
+    r"(?i)[(]{1,}(?:[^A-Za-z0-9]+Official)?\s{0,}?\s{0,}Video\s{0,}[)]{1,}", # ~Official Video
+    r"(?i)[(]{1,}\s{0,}HD\s{0,}[)]{1,}", # (HD)
+    r"(?i)[(]{1,}\s{0,}(?:On Screen)?\s{0,}?\s{0,}(?:Screen On)?\s{0,}?\s{0,}Lyrics\s{0,}?\s{0,}(?:On Screen)?\s{0,}?\s{0,}[)]{1,}",  # (ON SCREEN LYRICS)
+    r"(?i)[(]{1,}\s{0,}\s{0,}(?:\b\w+){0,1}\s+Ver[.]{1}\s{0,}[)]{1,}",  # (DE Ver.)
+    r"(?i)[(]{1,}\s{0,}(?:Official)?\s{0,}?\s{0,}Video\s{0,}(?:HD)?\s{0,}?[)]{1,}", # (Official Video HD)
+    r"(?i)[(]{1,}\s{0,}(?:No)?\s{0,}?\s{0,}Copyright\s{0,}(?:Music)?\s{0,}?[)]{1,}", # (No Copyright Music)
+    r"(?i)[(]{1,}\s{0,}(?:Our)?\s{0,}?\s{0,}Lyric\s{0,}(?:Video)?\s{0,}?[)]{1,}", # (Our Lyric Video)
+    r"(?i)[(]{1,}\s{0,}(?:Album[^A-Za-z0-9]+[s]{0,1})?\s{0,}?\s{0,}Version\s{0,}?[)]{1,}", # (Album Version)
+    r"(?i)[(]{1,}\s{0,}(?:O[f]{0,2}icial)?\s{0,}?\s{0,}Video\s{0,}(?:HD)?\s{0,}?[)]{1,}", # Official 
+    r"(?i)[(]{1,}\s{0,}Video\s{0,}(?:O[f]{1,2}icial)?\s{0,}?[)]{1,}",  # (Video Oficial)
+    r"(?i)[(]{1,}\s{0,}(?:O[f]{0,2}icial)?\s{0,}?(?:HD)?\s{0,}?\s{0,}Clip\s{0,}(?:HD)?\s{0,}?[)]{1,}", # Official Clip
+    r"(?i)[(]{1,}\s{0,}(?:Video)?\s{0,}?(?:HD)?\s{0,}?\s{0,}Officiel\s{0,}(?:Video)?\s{0,}?(?:HD)?\s{0,}?(?:Clip)?\s{0,}?(?:Video)?\s{0,}?[)]{1,}",    # (Clip Officiel)
+    r"(?i)[(]{1,}\s{0,}(?:Unreleased)?\s{0,}?\s{0,}(?:Tribute)?\s{0,}?\s{0,}(?:Music)?\s{0,}?\s{0,}Video\s{0,}[)]{1,}", # (Unreleased Tribute Music Video)
+    r"(?i)[(]{1,}\s{0,}(?:Unreleased)?\s{0,}?\s{0,}(?:Exclusive)?\s{0,}?\s{0,}(?:4K)?\s{0,}?\s{0,}Audio\s{0,}[)]{1,}", # (Unreleased Tribute Music Audio)
+    r"(?i)[(]{1,}\s{0,}(?:Exclusive)?\s{0,}?\s{0,}(?:Music)?\s{0,}?\s{0,}(?:HQ)?\s{0,}?\s{0,}Audio\s{0,}[)]{1,}", # (Exclusive Music Audio)     # (Unreleased Audio)
+    r"(?i)[(]{1,}\s{0,}(?:(?:\b\w+){0,2})\s{0,}(?:Exclusive)?\s{0,}?\s{0,}(?:- Official)?\s{0,}?\s{0,}(?:Music)?\s{0,}?\s{0,}Video\s{0,}[)]{1,}",  # ( 2 Words - Official Music Video)
+    r"(?i)[(]\s{0,}Remix\s{0,}[)]{1,}",  # (Remix)
+    r"(?i)[(]\s{0,}Dirty\s{0,}[)]{1,}",  # (Dirty)
+    r"(?i)[(]\s{0,}Unreleased\s{0,}[)]{1,}", # (Unreleased)
+    r"(?i)[(]\s{0,}New\s{0,}[)]{1,}",   # (New)
+    r"(?i)[(]\s{0,}Remake\s{0,}[)]{1,}",  # (Remake)
+    r"(?i)[(]{1,}\s{0,}\s{0,}\s{0,}Shot\s{1,}by\s{1,}.*[)]{1,}", # Shot By.....
     r"[(]\s{0,}[)]", # Removing Empty Parenthesis
-    r"(?i)(?<!^)[(]{1,}\s{0,}(?:O[f]{0,2}icial)?\s{0,}?(?:HD)?\s{0,}?(?:Video)?\s{0,}?\s{0,}Release\s{0,}[)]{1,}",  # (Official Video Release)
-    r"(?i)(?<!^)[(]{1,}\s{0,}(?:Exclusive -)?\s{0,}?(?:O[f]{0,2}icial)?\s{0,}?\s{0,}(?:Exclusive)?\s{0,}?\s{0,}(?:Music)?\s{0,}?\s{0,}Video\s{0,}[)]{1,}",  # (Exclusive - Official Music Video)
-    r"(?i)(?<!^)[(]{1,}\s{0,}\s{0,}\s{0,}Edit[e]{0,1}[d]{0,1}\s{1,}by[.]{0,1}\s{1,}.*[)]{1,}",  # Edit(ed) By.
-    r"(?i)(?<!^)[(]{1,}\s{0,}(?:\w+\W+){1,5}\s{0,}Production[s]{0,1}\s{0,}[)]{1,}$", # 1-5 words + Production(s)
-    r"(?i)(?<!^)[(]{1,}(?:Mash)?\s{0,}?\s{0,}(?:\d{1}[k]{1}\d{2}\s{0,}?\s{0,})?\s{0,}Mashup\s{0,}\s{0,}(?:\d{1}[k]{1}\d{2})?\s{0,}?[)]{1,}",  # (2k15 MashUp) or (2k19 Mashup)
-    r"(?i)(?<!^)[(]{1,}\s{0,}(?!VIP)(?:\w+){1}\s{0,}[)]{1,}",  # A Single Word in Parenthesis not VIP    # (freestyle) # (YGK) if not (VIP)   # (Freeway) - A single word? ( KiingRod )
-    r"(?i)(?<!^)[(]{1,}\s{0,}(?:Visual)?\s{0,}\s{0,}(?:Meme)?\s{0,}\s{0,}(?:Intro)?\s{0,}\s{0,}Audio\s{0,}[)]{1,}",   # (Visual Audio)
-    r"(?i)(?<!^)[(]{1,}\s{0,}(?:Exclusive)?\s{0,}\s{0,}(?:Meme)?\s{0,}\s{0,}(?:Slowed)?\s{0,}\s{0,}Video\s{0,}[)]{1,}",
-    r"(?i)(?<!^)[(]{1,}\s{0,}(?:Slowed [+]{0,1})?\s{0,}\s{0,}Reverb\s{0,}[)]{1,}", # (Slowed + Reverb)
-    r"(?i)(?<!^)[(]{1,}\s{0,}(?:\w+\W+){1}\s{0,}Exclusive\s{0,}[)]{1,}",  # (WSHH Exclusive)
-    r"(?i)(?<!^)[(]{1,}\s{0,}\s{0,}Part\s{1,}\d{1,2}\s{0,}[)]{1,}",  # (Part 3)
-    r"(?i)(?<!^)[(]{1,}\s{0,}\s{0,}\s{0,}Shot\s{1,}on\s{1,}.*[)]{1,}", # (Shot on iPhone by Cole Bennett)
-    r"(?i)(?<!^)[(]{1,}(?:Mash)?\s{0,}?\s{0,}(?:\d{1}[k]{1}\d{2}\s{0,}?\s{0,})?\s{0,}Mash\s{0,}\s{0,}(?:\d{1}[k]{1}\d{2})?\s{0,}?[)]{1,}", # (MASH 2K21)
-    r"(?i)(?<!^)[(]{1,}(?:Mash)?\s{0,}?\s{0,}(?:\d{4}\s{0,}?\s{0,})?\s{0,}Mash\s{0,}\s{0,}(?:\d{4})?\s{0,}?[)]{1,}", # (MASH 2021)
-    r"(?i)(?<!^)[(]{1,}\s{0,}(?:\w+\W+){1,5}\s{0,}Movie\s{0,}[)]{1,}", # (Hood Movie)
-    r"(?i)(?<!^)[(]{1,}\s{0,}(?:Video)?\s{0,}?(?:HD)?\s{0,}?\s{0,}Aftermovie\s{0,}(?:Video)?\s{0,}?(?:HD)?\s{0,}?(?:Video)?\s{0,}?[)]{1,}",  #  Aftermovie
-    r"(?i)(?<!^)[(]{1,}\s{0,}(?:\w+\W+){0,1}Aftermovie\s{0,}[)]{1,}", # (Aftermovie)
-    r"(?i)(?<!^)[(]{1,}\s{0,}(?:\w+\W+){1}Aftermovie\s{0,}[)]{1,}", # (Italy Aftermovie)
-    r"(?i)(?<!^)[(]{1,}\s{0,}(?:\w+\W+){1,4}\s{0,}Bootleg\s{0,}[)]{1,}",  # (DJ KARSKY BOOTLEG)
-    r"(?i)(?<!^)[(]{1,}\s{0,}O[f]{0,2}icial\s{1,}(?:\w+\W+){1,5}\s{0,}[)]{1,}", # (Official Music Video - WSHH Exclusive)
-    r"(?i)(?<!^)[(]{1,}\s{0,}O[f]{0,2}icial\s{1,}(?:VideoClip)\s{0,}[)]{1,}", # (Official Videoclip)
-    r"(?i)(?<!^)[(]{1,}(?:Intro)?\s{0,}\d{4}\s{0,}?\s{0,}\s{0,}(?:Intro)?\s{0,}[)]{1,}", # (Intro 2017)
-    r"(?i)(?<!^)[(]{1,}\s{0,}HQ\s{1,}O[f]{0,2}icial\s{0,}[)]{1,}", # (HQ Official)
-    r"(?i)(?<!^)[(]{1,}\s{0,}(?:Official)?\s{0,}?\s{0,}Video\s{0,}(?:Clip)?\s{0,}?[)]{1,}", # (Official Video Clip)
-    r"(?i)(?<!^)[(]{1,}\s{0,}(?:Official)?\s{0,}?(?:Free)?\s{0,}?\s{0,}Download\s{0,}(?:Free)?\s{0,}?[)]{1,}", # (FREE DOWNLOAD)
-    r"(?i)(?<!^)[(]{1,}\s{0,}(?:New)?\s{0,}?(?:Free)?\s{0,}?\s{0,}Music\s{0,}(?:Stream)?\s{0,}?[)]{1,}",   # (NEW MUSIC)
-    r"(?i)(?<!^)[(]{1,}\s{0,}(?:Official)?\s{0,}?(?:HD)?\s{0,}?(?:Full)?\s{0,}?\s{0,}Stream\s{0,}(?:Full)?\s{0,}?[)]{1,}",  # (Official Full Stream)
-    r"(?i)(?<!^)[(]{1,}\s{0,}(?:Official)?\s{0,}?(?:Preview)?\s{0,}?(?:PREMIER)?\s{0,}?(?:PREMIERA)?\s{0,}?\s{0,}\d{4}\s{0,}[)]{1,}",     # PREMIERA 2021) or PREMIER or Preview
-    r"(?i)(?<!^)[(]{1,}\s{0,}(?:\w+\W+){1,1}\s{0,}Bootleg\s{0,}?\s{0,}(?:\d{4})\s{0,}?\s{0,}[)]{1,}",     # (ENDRIU BOOTLEG 2021)
-    r"(?i)(?<!^)[(]{1,}\s{0,}(?:\w+\W+){1,5}\s{0,}Recap\s{0,}[)]{1,}", # (Summer Tour 2017 Recap)
-    r"(?i)(?<!^)[(]{1,}\s{0,}(?:\w+\W+){1,5}\s{0,}HQ\s{0,}[)]{1,}",  # (Extended Snippet HQ)
-    r"(?i)(?<!^)[(]{1,}\s{0,}(?:\w+\W+){1,5}\s{0,}\W+Lyrics\W+\s{0,}[)]{1,}", # (Whatever Lyrics)
-    r"(?i)(?<!^)[(]{1,}\s{0,}Meme\s{1,}(?:\w+\W+){0,3}Song\s{0,}[)]{1,}", # (Meme Words Song)
-    r"(?i)(?<!^)[(]{1,}\s{0,}(?:\w+\W+){0,3}Meme\s{1,}(?:\w+\W+){0,3}Remix\s{0,}[)]{1,}", # (Coffin Dance Meme Song Remix)
-    r"(?i)(?<!^)[(]{1,}\s{0,}(?:\w+\W+){0,3}Intro\s{1,}(?:\w+\W+){0,3}Song\s{0,}[)]{1,}", # (Ali-A Fortnite Intro Song)
-    r"(?i)(?<!^)[(]{1,}\s{0,}(?:\w+\W+){0,3}Style\s{0,}[)]{1,}",  # ( Dance Club Style )
-    r"(?i)(?<!^)[(]{1,}\s{0,}Billboard\s{0,}?(?:\w+\W+){1}\s{0,}?\s{0,}\s{0,}\d{1,4}\s{0,}[)]{1,}", # (Billboard Hot 100)
-    r"(?i)(?<!^)[(]{1,}\s{0,}Rated\s{1}\w+\s{0,1}[)]{1,}", # (Rated PG)
-    r"(?i)(?<!^)[(]{1,}\s{0,}HD\s{1}\w+\s{0,1}[)]{1,}",  # (HD Version)
-    r"(?i)(?<!^)[(]{1,}\s{0,}(?:Music)?\s{0,}?(?:Remastered)?\s{0,}?(?:Music)?\s{0,}?O[f]{0,2}icial\s{1,}\s{0,}(?:Music)?\s{0,}?(?:Video)?\s{0,}?(?:Remastered)?\s{0,}?[)]{1,}",     # (Official Music Video Remastered)
-    r"(?i)(?<!^)[(]{1,}\s{0,}(?:Officially)?\s{0,}?(?:Out)?\s{0,}?Now\s{0,}[)]{1,}",  # (OUT NOW)
-    r"(?i)(?<!^)[(]{1,}\s{0,}(?:Your)?\s{0,}?(?:Choice)?\s{0,}?(?:Top)?\s{0,}?\d{1,4}\s{0,}[)]{1,}",     # (Your Choice Top 10)
-    r"(?i)(?<!^)[(]{1,}\s{0,}(?:\w+\W+){0,3}\s{0,}Chart[s]{0,1}\s{0,}[)]{1,}", # (UK BBC CHART)
-    r"(?i)(?<!^)[(]{1,}(?:New)?\s{0,}?\s{0,}(?:HD)?\s{0,}?\s{0,}Version\s{0,}[)]{1,}",  # (New Version)
-    r"(?i)(?<!^)[(]{1,}\s{0,}O[f]{0,2}icial\s{1,}(?:Video)?\s{0,}?\s{0,1}[-]{1,}\s{0,1}\d{4}\s{0,}[)]{1,}",   # (Official Video - 1996)
-    r"(?i)(?<!^)[(]{1,}\s{0,}Set\s{0,1}(?:Rip)?\s{0,}?[)]{1,}", # (Set rip)
-    r"(?i)(?<!^)[(]{1,}\d{4}\s{0,}?(?:Remaster)?\s{0,}[)]{1,}", # (2018 Remaster)
-    r"(?i)(?<!^)[(]{1,}\s{0,}Stereo\s{0,1}?(?:Version)?\s{0,}[)]{1,}", #(Stereo Version)
-    r"(?i)(?<!^)[(]{1,}\s{0,}((\b\d{1,2}\D{0,3})?\b(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|(Nov|Dec)(?:ember)?)\D?)(\d{1,2}(st|nd|rd|th)?)?((\s*[,.\-\/]\s*)\D?)?\s*((19[0-9]\d|20\d{2})|\d{2})*\s{0,}[)]{1,}", # (July 2019)
-    r"(?i)(?<!^)[(]{1,}\s{0,}(?:Best)?\s{0,}?\s{0,}\s{0,}(?:Songs)?\s{0,}?((\b\d{1,2}\D{0,3})?\b(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|(Nov|Dec)(?:ember)?)\D?)(\d{1,2}(st|nd|rd|th)?)?((\s*[,.\-\/]\s*)\D?)?\s*((19[0-9]\d|20\d{2})|\d{2})*\s{0,}[)]{1,}", # (BEST SONGS Month 2019)
-    r"(?i)(?<!^)[(]{1,}\s{0,}(?:Best)?\s{0,}?\s{0,}\s{0,}(?:Songs)?\s{0,}?\d{4}\s{0,}[)]{1,}", # Best Songs 2020
-    r"(?i)(?<!^)[(]{1,}\s{0,}(?:\w+\W+){1}\s{0,}[)]{1,}", # (IMPOSSIBLE!!!)
-    r"(?i)(?<!^)[(]{1,}\s{0,}(?:\w+\W+){1}\s{0,}\s{0,1}Remixes\s{0,1}[)]{1,}", # (The Remixes)
-    r"(?i)(?<!^)[(]{1,}\s{0,}(?:\w+\W+){1,6}\s{0,}\s{0,1}Lip[-]{0,1}\s{0,1}Sync\s{0,1}[)]{1,}", # (The Victoria’s Secret Angels Lip Sync)
+    r"(?i)[(]{1,}\s{0,}(?:O[f]{0,2}icial)?\s{0,}?(?:HD)?\s{0,}?(?:Video)?\s{0,}?\s{0,}Release\s{0,}[)]{1,}",  # (Official Video Release)
+    r"(?i)[(]{1,}\s{0,}(?:Exclusive -)?\s{0,}?(?:O[f]{0,2}icial)?\s{0,}?\s{0,}(?:Exclusive)?\s{0,}?\s{0,}(?:Music)?\s{0,}?\s{0,}Video\s{0,}[)]{1,}",  # (Exclusive - Official Music Video)
+    r"(?i)[(]{1,}\s{0,}\s{0,}\s{0,}Edit[e]{0,1}[d]{0,1}\s{1,}by[.]{0,1}\s{1,}.*[)]{1,}",  # Edit(ed) By.
+    r"(?i)[(]{1,}\s{0,}(?:\w+\W+){1,5}\s{0,}Production[s]{0,1}\s{0,}[)]{1,}$", # 1-5 words + Production(s)
+    r"(?i)[(]{1,}(?:Mash)?\s{0,}?\s{0,}(?:\d{1}[k]{1}\d{2}\s{0,}?\s{0,})?\s{0,}Mashup\s{0,}\s{0,}(?:\d{1}[k]{1}\d{2})?\s{0,}?[)]{1,}",  # (2k15 MashUp) or (2k19 Mashup)
+    r"(?i)[(]{1,}\s{0,}(?!VIP)(?!Original)(?:\w+){1}\s{0,}[)]{1,}",  # A Single Word in Parenthesis not VIP    # (freestyle) # (YGK) if not (VIP)   # (Freeway) - A single word? ( KiingRod )
+    r"(?i)[(]{1,}\s{0,}(?:Visual)?\s{0,}\s{0,}(?:Meme)?\s{0,}\s{0,}(?:Intro)?\s{0,}\s{0,}Audio\s{0,}[)]{1,}",   # (Visual Audio)
+    r"(?i)[(]{1,}\s{0,}(?:Exclusive)?\s{0,}\s{0,}(?:Meme)?\s{0,}\s{0,}(?:Slowed)?\s{0,}\s{0,}Video\s{0,}[)]{1,}",
+    r"(?i)[(]{1,}\s{0,}(?:Slowed [+]{0,1})?\s{0,}\s{0,}Reverb\s{0,}[)]{1,}", # (Slowed + Reverb)
+    r"(?i)[(]{1,}\s{0,}(?:\w+\W+){1}\s{0,}Exclusive\s{0,}[)]{1,}",  # (WSHH Exclusive)
+    r"(?i)[(]{1,}\s{0,}\s{0,}Part\s{1,}\d{1,2}\s{0,}[)]{1,}",  # (Part 3)
+    r"(?i)[(]{1,}\s{0,}\s{0,}\s{0,}Shot\s{1,}on\s{1,}.*[)]{1,}", # (Shot on iPhone by Cole Bennett)
+    r"(?i)[(]{1,}(?:Mash)?\s{0,}?\s{0,}(?:\d{1}[k]{1}\d{2}\s{0,}?\s{0,})?\s{0,}Mash\s{0,}\s{0,}(?:\d{1}[k]{1}\d{2})?\s{0,}?[)]{1,}", # (MASH 2K21)
+    r"(?i)[(]{1,}(?:Mash)?\s{0,}?\s{0,}(?:\d{4}\s{0,}?\s{0,})?\s{0,}Mash\s{0,}\s{0,}(?:\d{4})?\s{0,}?[)]{1,}", # (MASH 2021)
+    r"(?i)[(]{1,}\s{0,}(?:\w+\W+){1,5}\s{0,}Movie\s{0,}[)]{1,}", # (Hood Movie)
+    r"(?i)[(]{1,}\s{0,}(?:Video)?\s{0,}?(?:HD)?\s{0,}?\s{0,}Aftermovie\s{0,}(?:Video)?\s{0,}?(?:HD)?\s{0,}?(?:Video)?\s{0,}?[)]{1,}",  #  Aftermovie
+    r"(?i)[(]{1,}\s{0,}(?:\w+\W+){0,1}Aftermovie\s{0,}[)]{1,}", # (Aftermovie)
+    r"(?i)[(]{1,}\s{0,}(?:\w+\W+){1}Aftermovie\s{0,}[)]{1,}", # (Italy Aftermovie)
+    r"(?i)[(]{1,}\s{0,}(?:\w+\W+){1,4}\s{0,}Bootleg\s{0,}[)]{1,}",  # (DJ KARSKY BOOTLEG)
+    r"(?i)[(]{1,}\s{0,}O[f]{0,2}icial\s{1,}(?:\w+\W+){1,5}\s{0,}[)]{1,}", # (Official Music Video - WSHH Exclusive)
+    r"(?i)[(]{1,}\s{0,}O[f]{0,2}icial\s{1,}(?:VideoClip)\s{0,}[)]{1,}", # (Official Videoclip)
+    r"(?i)[(]{1,}(?:Intro)?\s{0,}\d{4}\s{0,}?\s{0,}\s{0,}(?:Intro)?\s{0,}[)]{1,}", # (Intro 2017)
+    r"(?i)[(]{1,}\s{0,}HQ\s{1,}O[f]{0,2}icial\s{0,}[)]{1,}", # (HQ Official)
+    r"(?i)[(]{1,}\s{0,}(?:Official)?\s{0,}?\s{0,}Video\s{0,}(?:Clip)?\s{0,}?[)]{1,}", # (Official Video Clip)
+    r"(?i)[(]{1,}\s{0,}(?:Official)?\s{0,}?(?:Free)?\s{0,}?\s{0,}Download\s{0,}(?:Free)?\s{0,}?[)]{1,}", # (FREE DOWNLOAD)
+    r"(?i)[(]{1,}\s{0,}(?:New)?\s{0,}?(?:Free)?\s{0,}?\s{0,}Music\s{0,}(?:Stream)?\s{0,}?[)]{1,}",   # (NEW MUSIC)
+    r"(?i)[(]{1,}\s{0,}(?:Official)?\s{0,}?(?:HD)?\s{0,}?(?:Full)?\s{0,}?\s{0,}Stream\s{0,}(?:Full)?\s{0,}?[)]{1,}",  # (Official Full Stream)
+    r"(?i)[(]{1,}\s{0,}(?:Official)?\s{0,}?(?:Preview)?\s{0,}?(?:PREMIER)?\s{0,}?(?:PREMIERA)?\s{0,}?\s{0,}\d{4}\s{0,}[)]{1,}",     # PREMIERA 2021) or PREMIER or Preview
+    r"(?i)[(]{1,}\s{0,}(?:\w+\W+){1,1}\s{0,}Bootleg\s{0,}?\s{0,}(?:\d{4})\s{0,}?\s{0,}[)]{1,}",     # (ENDRIU BOOTLEG 2021)
+    r"(?i)[(]{1,}\s{0,}(?:\w+\W+){1,5}\s{0,}Recap\s{0,}[)]{1,}", # (Summer Tour 2017 Recap)
+    r"(?i)[(]{1,}\s{0,}(?:\w+\W+){1,5}\s{0,}HQ\s{0,}[)]{1,}",  # (Extended Snippet HQ)
+    r"(?i)[(]{1,}\s{0,}(?:\w+\W+){1,5}\s{0,}\W+Lyrics\W+\s{0,}[)]{1,}", # (Whatever Lyrics)
+    r"(?i)[(]{1,}\s{0,}Meme\s{1,}(?:\w+\W+){0,3}Song\s{0,}[)]{1,}", # (Meme Words Song)
+    r"(?i)[(]{1,}\s{0,}(?:\w+\W+){0,3}Meme\s{1,}(?:\w+\W+){0,3}Remix\s{0,}[)]{1,}", # (Coffin Dance Meme Song Remix)
+    r"(?i)[(]{1,}\s{0,}(?:\w+\W+){0,3}Intro\s{1,}(?:\w+\W+){0,3}Song\s{0,}[)]{1,}", # (Ali-A Fortnite Intro Song)
+    r"(?i)[(]{1,}\s{0,}(?:\w+\W+){0,3}Style\s{0,}[)]{1,}",  # ( Dance Club Style )
+    r"(?i)[(]{1,}\s{0,}Billboard\s{0,}?(?:\w+\W+){1}\s{0,}?\s{0,}\s{0,}\d{1,4}\s{0,}[)]{1,}", # (Billboard Hot 100)
+    r"(?i)[(]{1,}\s{0,}Rated\s{1}\w+\s{0,1}[)]{1,}", # (Rated PG)
+    r"(?i)[(]{1,}\s{0,}HD\s{1}\w+\s{0,1}[)]{1,}",  # (HD Version)
+    r"(?i)[(]{1,}\s{0,}(?:Music)?\s{0,}?(?:Remastered)?\s{0,}?(?:Music)?\s{0,}?O[f]{0,2}icial\s{1,}\s{0,}(?:Music)?\s{0,}?(?:Video)?\s{0,}?(?:Remastered)?\s{0,}?[)]{1,}",     # (Official Music Video Remastered)
+    r"(?i)[(]{1,}\s{0,}(?:Officially)?\s{0,}?(?:Out)?\s{0,}?Now\s{0,}[)]{1,}",  # (OUT NOW)
+    r"(?i)[(]{1,}\s{0,}(?:Your)?\s{0,}?(?:Choice)?\s{0,}?(?:Top)?\s{0,}?\d{1,4}\s{0,}[)]{1,}",     # (Your Choice Top 10)
+    r"(?i)[(]{1,}\s{0,}(?:\w+\W+){0,3}\s{0,}Chart[s]{0,1}\s{0,}[)]{1,}", # (UK BBC CHART)
+    r"(?i)[(]{1,}(?:New)?\s{0,}?\s{0,}(?:HD)?\s{0,}?\s{0,}Version\s{0,}[)]{1,}",  # (New Version)
+    r"(?i)[(]{1,}\s{0,}O[f]{0,2}icial\s{1,}(?:Video)?\s{0,}?\s{0,1}[-]{1,}\s{0,1}\d{4}\s{0,}[)]{1,}",   # (Official Video - 1996)
+    r"(?i)[(]{1,}\s{0,}Set\s{0,1}(?:Rip)?\s{0,}?[)]{1,}", # (Set rip)
+    r"(?i)[(]{1,}\d{4}\s{0,}?(?:Remaster)?\s{0,}[)]{1,}", # (2018 Remaster)
+    r"(?i)[(]{1,}\s{0,}Stereo\s{0,1}?(?:Version)?\s{0,}[)]{1,}", #(Stereo Version)
+    r"(?i)[(]{1,}\s{0,}((\b\d{1,2}\D{0,3})?\b(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|(Nov|Dec)(?:ember)?)\D?)(\d{1,2}(st|nd|rd|th)?)?((\s*[,.\-\/]\s*)\D?)?\s*((19[0-9]\d|20\d{2})|\d{2})*\s{0,}[)]{1,}", # (July 2019)
+    r"(?i)[(]{1,}\s{0,}(?:Best)?\s{0,}?\s{0,}\s{0,}(?:Songs)?\s{0,}?((\b\d{1,2}\D{0,3})?\b(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|(Nov|Dec)(?:ember)?)\D?)(\d{1,2}(st|nd|rd|th)?)?((\s*[,.\-\/]\s*)\D?)?\s*((19[0-9]\d|20\d{2})|\d{2})*\s{0,}[)]{1,}", # (BEST SONGS Month 2019)
+    r"(?i)[(]{1,}\s{0,}(?:Best)?\s{0,}?\s{0,}\s{0,}(?:Songs)?\s{0,}?\d{4}\s{0,}[)]{1,}", # Best Songs 2020
+    r"(?i)[(]{1,}\s{0,}(?:\w+\W+){1}\s{0,}[)]{1,}", # (IMPOSSIBLE!!!)
+    r"(?i)[(]{1,}\s{0,}(?:\w+\W+){1}\s{0,}\s{0,1}Remixes\s{0,1}[)]{1,}", # (The Remixes)
+    r"(?i)[(]{1,}\s{0,}(?:\w+\W+){1,6}\s{0,}\s{0,1}Lip[-]{0,1}\s{0,1}Sync\s{0,1}[)]{1,}", # (The Victoria’s Secret Angels Lip Sync)
     r"^\s{0,}\(([^\)]+)\)",  # (Patti) LaBelle - Lady Marmalade HD 0815007
-    r"(?i)(?<!^)[(]{1,}\s{0,}(?:Officially)?\s{0,}?(?:Out\W+)?\s{0,}?Now\W+\s{0,}[)]{1,}", #  (OUT NOW!) 
-    r"(?i)(?<!^)[(]{1,}\s{0,}Sub[s]{0,1}[.]{0,1}\s{0,}\w+\W{0,1}\s{0,}[)]{1,}", # (Sub. Español)
-    r"(?i)(?<!^)[(]{1,}\s{0,}\w+\W{0,1}\s{0,}Subtitles{0,1}\s{0,}\w+\W{0,1}\s{0,}[)]{1,}",   # (English Subtitles) - (Subtitles Spanish)
-    r"(?i)(?<!^)[(]{1,}\s{0,}(?:4K)?\s{0,}?\s{0,}(?:Official)?\s{0,}?\s{0,}(?:4K)?\s{0,}?\s{0,}Video[c]{0,1}[l]{0,1}[i]{0,1}[p]{0,1}\s{0,}(?:Clip)?\s{0,}?[)]{1,}", #  ( 4K Official Videoclip )
-    r"(?i)(?<!^)[(]{1,}\s{0,}(?:Audio)?\s{0,}?\s{0,}(?:Official)?\s{0,}?\s{0,}(?:Video)?\s{0,}?\s{0,}Clip\s{0,}?[)]{1,}",     # (Audio Clip)
-    r"(?i)(?<!^)[(]{1,}\s{0,}(?:Animated)?\s{0,}?\s{0,}(?:Cover)?\s{0,}?\s{0,}Art\s{0,}(?:[-]{0,}Cover)?\s{0,}?\s{0,}\s{0,}?[)]{1,}", # (Animated Cover Art)
-    r"(?i)(?<!^)[(]{1,}\s{0,}Taken{0,}\s{1,}From\s{0,}.*[)]{1,}", # (Taken from ASOT 2016)
+    r"(?i)[(]{1,}\s{0,}(?:Officially)?\s{0,}?(?:Out\W+)?\s{0,}?Now\W+\s{0,}[)]{1,}", #  (OUT NOW!) 
+    r"(?i)[(]{1,}\s{0,}Sub[s]{0,1}[.]{0,1}\s{0,}\w+\W{0,1}\s{0,}[)]{1,}", # (Sub. Español)
+    r"(?i)[(]{1,}\s{0,}\w+\W{0,1}\s{0,}Subtitles{0,1}\s{0,}\w+\W{0,1}\s{0,}[)]{1,}",   # (English Subtitles) - (Subtitles Spanish)
+    r"(?i)[(]{1,}\s{0,}(?:4K)?\s{0,}?\s{0,}(?:Official)?\s{0,}?\s{0,}(?:4K)?\s{0,}?\s{0,}Video[c]{0,1}[l]{0,1}[i]{0,1}[p]{0,1}\s{0,}(?:Clip)?\s{0,}?[)]{1,}", #  ( 4K Official Videoclip )
+    r"(?i)[(]{1,}\s{0,}(?:Audio)?\s{0,}?\s{0,}(?:Official)?\s{0,}?\s{0,}(?:Video)?\s{0,}?\s{0,}Clip\s{0,}?[)]{1,}",     # (Audio Clip)
+    r"(?i)[(]{1,}\s{0,}(?:Animated)?\s{0,}?\s{0,}(?:Cover)?\s{0,}?\s{0,}Art\s{0,}(?:[-]{0,}Cover)?\s{0,}?\s{0,}\s{0,}?[)]{1,}", # (Animated Cover Art)
+    r"(?i)[(]{1,}\s{0,}Taken{0,}\s{1,}From\s{0,}.*[)]{1,}", # (Taken from ASOT 2016)
     r"[(]{1,}\W+[)]{1,}", # (◕,,,◕)
-    r"(?i)(?<!^)[(]{1,}\s{0,}(?:\w+\W+){0,3}\s{0,}Film\s{0,}[)]{1,}", # (The Short Film)
-    r"(?i)(?<!^)[(]{1,}\s{0,}(?:\w+\W+){0,3}\s{0,}Remode\s{0,}[)]{1,}", # (KAAZE Remode)
-    r"(?i)(?<!^)[(]{1,}\s{0,}(?:OUT)?\s{0,}?\s{0,}\s{0,}(?:NOW)?\s{0,}?((\b\d{1,2}\D{0,3})?\b(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|(Nov|Dec)(?:ember)?)\D?)(\d{1,2}(st|nd|rd|th)?)?((\s*[,.\-\/]\s*)\D?)?\s*((19[0-9]\d|20\d{2})|\d{2})*\s{0,}[)]{1,}", # (OUT AUGUST 28)
-    r"(?i)(?<!^)[(]{1,}\s{0,}(?:OUT)?\s{0,}?\s{0,}\s{0,}(?:ON)?\s{0,}?((\b\d{1,2}\D{0,3})?\b(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|(Nov|Dec)(?:ember)?)\D?)(\d{1,2}(st|nd|rd|th)?)?((\s*[,.\-\/]\s*)\D?)?\s*((19[0-9]\d|20\d{2})|\d{2})*\s{0,}[)]{1,}",   # (OUT ON AUGUST 28) 
-    r"(?i)(?<!^)[(]{1,}\s{0,}((\b\d{1,2}\D{0,3})?\b(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|(Nov|Dec)(?:ember)?)\D?)(\d{1,2}(st|nd|rd|th)?)?((\s*[,.\-\/]\s*)\D?)?\s*((19[0-9]\d|20\d{2})|\d{2})*(?:OUT)?\s{0,}?\s{0,}\s{0,}(?:NOW)?\s{0,}?\s{0,}[)]{1,}",     # (AUGUST 28 OUT NOW) 
-    r"(?i)(?<!^)[(]{1,}\s{0,1}Out\s{1}on\s{1,}\s{0,}(\s{0,1}\b\w+){1,3}\s{0,}[)]",  # (Out on Ophelia Records)
-    r"(?i)(?<!^)[(]{1,}\s{0,}O[f]{0,2}icial\s{1,}\s{0,}(?:Movie)?\s{0,}(?:Trailer)?\s{0,}?\s{0,}(?:Teaser)?\s{0,}?\s{0,}?[)]{1,}",    # (Official Teaser)    # (Official Movie Trailer)
-    r"(?i)(?<!^)[(]{1,}\s{0,}\s{0,}(?:O[f]{1,2}icial)?\s{0,}?Movie\s{0,}\s{0,}(?:Teaser)?\s{0,}?\s{0,}(?:Trailer)?\s{0,}?[)]{1,}", # (Official Movie Trailer) # (Movie Teaser )
-    r"(?i)(?<!^)[(]{1,}\s{0,}\s{0,}(?:Free)?\s{0,}?Release\s{0,}\s{0,}[)]{1,}",  # ( Free Release )
-    r"(?i)(?<!^)[(]{1,}\s{0,}\s{0,}(?:Audio)?\s{0,}?Only\s{0,}(?:Audio)?\s{0,}?\s{0,}[)]{1,}", # (audio only) 
-    r"(?i)(?<!^)[(]{1,}\s{0,}\s{0,}Audio\s{0,}(?:Snippet)?\s{0,}?\s{0,}[)]{1,}",  # (audio snippet)
-    r"(?i)(?<!^)[(]{1,}\s{0,}\s{0,}Full\s{0,}(?:EP)?\s{0,}?\s{0,}(?:Track)?\s{0,}?\s{0,}[)]{1,}",    # (Full EP)     # (FULL TRACK)
-    r"(?i)(?<!^)[(]{1,}\s{0,}\s{0,}Full\s{1,}Track\s{0,}[-]{0,1}\s{0,}?\s{0,}\s{0,}(?:\W+OUT NOW\W+)\s{0,}[)]{1,}", # (FULL TRACK - *OUT NOW*)
-    r"(?i)(?<!^)[(]{1,}\s{0,}\s{0,}\s{0,}(?:4K)?\s(?:Official)?\s{0,}Videoclip\s{0,}[)]{1,}",  # ( 4K Official Videoclip )
-    r"(?i)(?<!^)[(]{1,}\s{0,}\s{0,}\s{0,}(?:Music)?\s(?:Video)?\s{0,}HD\s{0,}[)]{1,}", # (Music Video HD)
-    r"(?i)(?<!^)[(]{1,}\s{0,}\s{0,}(?:\w+\W+){1,2}Boot\s{0,}[)]{1,}", # (Smookie Illson Boot)
-    r"(?i)(?<!^)[(]{1,}\s{0,}\s{0,}(?:\w+\W+){1,2}\s{0,}Boot\s{0,}[)]{1,}",  # (Smookie Illson Boot)
-    r"(?i)(?<!^)[(]{1,}\s{0,}Committed\s{1,}To\s{1,}.*\s{0,}[)]{1,}", # (Committed To Sparkle Motion) 
-    r"(?i)(?<!^)[(]{1,}\s{0,}Full\s{1,}Album\s{0,}[)]{1,}", # (full album)
+    r"(?i)[(]{1,}\s{0,}(?:\w+\W+){0,3}\s{0,}Film\s{0,}[)]{1,}", # (The Short Film)
+    r"(?i)[(]{1,}\s{0,}(?:\w+\W+){0,3}\s{0,}Remode\s{0,}[)]{1,}", # (KAAZE Remode)
+    r"(?i)[(]{1,}\s{0,}(?:OUT)?\s{0,}?\s{0,}\s{0,}(?:NOW)?\s{0,}?((\b\d{1,2}\D{0,3})?\b(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|(Nov|Dec)(?:ember)?)\D?)(\d{1,2}(st|nd|rd|th)?)?((\s*[,.\-\/]\s*)\D?)?\s*((19[0-9]\d|20\d{2})|\d{2})*\s{0,}[)]{1,}", # (OUT AUGUST 28)
+    r"(?i)[(]{1,}\s{0,}(?:OUT)?\s{0,}?\s{0,}\s{0,}(?:ON)?\s{0,}?((\b\d{1,2}\D{0,3})?\b(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|(Nov|Dec)(?:ember)?)\D?)(\d{1,2}(st|nd|rd|th)?)?((\s*[,.\-\/]\s*)\D?)?\s*((19[0-9]\d|20\d{2})|\d{2})*\s{0,}[)]{1,}",   # (OUT ON AUGUST 28) 
+    r"(?i)[(]{1,}\s{0,}((\b\d{1,2}\D{0,3})?\b(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|(Nov|Dec)(?:ember)?)\D?)(\d{1,2}(st|nd|rd|th)?)?((\s*[,.\-\/]\s*)\D?)?\s*((19[0-9]\d|20\d{2})|\d{2})*(?:OUT)?\s{0,}?\s{0,}\s{0,}(?:NOW)?\s{0,}?\s{0,}[)]{1,}",     # (AUGUST 28 OUT NOW) 
+    r"(?i)[(]{1,}\s{0,1}Out\s{1}on\s{1,}\s{0,}(\s{0,1}\b\w+){1,3}\s{0,}[)]",  # (Out on Ophelia Records)
+    r"(?i)[(]{1,}\s{0,}O[f]{0,2}icial\s{1,}\s{0,}(?:Movie)?\s{0,}(?:Trailer)?\s{0,}?\s{0,}(?:Teaser)?\s{0,}?\s{0,}?[)]{1,}",    # (Official Teaser)    # (Official Movie Trailer)
+    r"(?i)[(]{1,}\s{0,}\s{0,}(?:O[f]{1,2}icial)?\s{0,}?Movie\s{0,}\s{0,}(?:Teaser)?\s{0,}?\s{0,}(?:Trailer)?\s{0,}?[)]{1,}", # (Official Movie Trailer) # (Movie Teaser )
+    r"(?i)[(]{1,}\s{0,}\s{0,}(?:Free)?\s{0,}?Release\s{0,}\s{0,}[)]{1,}",  # ( Free Release )
+    r"(?i)[(]{1,}\s{0,}\s{0,}(?:Audio)?\s{0,}?Only\s{0,}(?:Audio)?\s{0,}?\s{0,}[)]{1,}", # (audio only) 
+    r"(?i)[(]{1,}\s{0,}\s{0,}Audio\s{0,}(?:Snippet)?\s{0,}?\s{0,}[)]{1,}",  # (audio snippet)
+    r"(?i)[(]{1,}\s{0,}\s{0,}Full\s{0,}(?:EP)?\s{0,}?\s{0,}(?:Track)?\s{0,}?\s{0,}[)]{1,}",    # (Full EP)     # (FULL TRACK)
+    r"(?i)[(]{1,}\s{0,}\s{0,}Full\s{1,}Track\s{0,}[-]{0,1}\s{0,}?\s{0,}\s{0,}(?:\W+OUT NOW\W+)\s{0,}[)]{1,}", # (FULL TRACK - *OUT NOW*)
+    r"(?i)[(]{1,}\s{0,}\s{0,}\s{0,}(?:4K)?\s(?:Official)?\s{0,}Videoclip\s{0,}[)]{1,}",  # ( 4K Official Videoclip )
+    r"(?i)[(]{1,}\s{0,}\s{0,}\s{0,}(?:Music)?\s(?:Video)?\s{0,}HD\s{0,}[)]{1,}", # (Music Video HD)
+    r"(?i)[(]{1,}\s{0,}\s{0,}(?:\w+\W+){1,2}Boot\s{0,}[)]{1,}", # (Smookie Illson Boot)
+    r"(?i)[(]{1,}\s{0,}\s{0,}(?:\w+\W+){1,2}\s{0,}Boot\s{0,}[)]{1,}",  # (Smookie Illson Boot)
+    r"(?i)[(]{1,}\s{0,}Committed\s{1,}To\s{1,}.*\s{0,}[)]{1,}", # (Committed To Sparkle Motion) 
+    r"(?i)[(]{1,}\s{0,}Full\s{1,}Album\s{0,}[)]{1,}", # (full album)
+    r"(?i)[(]{1,}\s{0,}O[f]{0,2}icial\s{1,}\s{0,}(?:Movie)?\s{0,}(?:Trailer)?\s{0,}?\s{0,}(?:Preview)?\s{0,}?\s{0,}?[)]{1,}",   # (Official Preview )
+    r"(?i)[(]{1,}\s{0,}O[f]{0,2}icial\s{1,}\s{0,}(?:Movie)?\s{0,}(?:Trailer)?\s{0,}?\s{0,}(?:HD)?\s{0,}?\s{0,}\s{0,}(?:HQ)?\s{0,}?\s{0,}(?:Preview)?\s{0,}?\s{0,}?[)]{1,}",     # (Official HQ Preview)
+    r"(?i)[(]{1,}\s{0,}Original(?:Movie)?\s{0,}(?:Trailer)?\s{0,}?\s{1,}(?:Song)\s{0,}?\s{0,}\s{0,}(?:HQ)?\s{0,}?\s{0,}(?:Preview)?\s{0,}?\s{0,}?[)]{1,}",     # (Original Song)
+    r"(?i)[(]{1,}\s{0,}O[f]{0,2}icial\s{1,}\s{0,}(?:Movie)?\s{0,}(?:Lyric)?\s{0,}?\s{0,}(?:HD)?\s{0,}?\s{0,}\s{0,}(?:Video)?\s{0,}?\s{0,}(?:HD)?\s{0,}?\s{0,}?[)]{1,}",     # (Official Lyric Video HD)
+    r"(?i)[(]{1,}\s{0,}Making\s{1,}of\s{0,}[)]{1,}", # (Making Of)
+    r"(?i)[(]{1,}\s{0,}O[f]{0,2}icial\s{1,}\s{0,}(?:Visual)?\s{0,}?[)]{1,}",  # (Official Visual) 
+    r"(?i)[(]{1,}\s{0,}Uncensored\s{1,}\s{0,}(?:HD)?\s{0,}?\s{0,}(?:Official)?\s{0,}?\s{0,}(?:HD)?\s{0,}?\s{0,}(?:\w+\W+){1}\s{0,}(?:Version)?\s{0,}?[)]{1,}", # (Uncensored HD Official UK Version)
+    r"(?i)[(]{1,}\s{0,}Out\s{1,}on\s{0,}(?:\w+\W+){1,3}\s{0,}(?:\d{4}\s{0,}?\s{0,})?\s{0,}\s{0,}?((\b\d{1,2}\D{0,3})?\b(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|(Nov|Dec)(?:ember)?)\D?)(\d{1,2}(st|nd|rd|th)?)?((\s*[,.\-\/]\s*)\D?)?\s*((19[0-9]\d|20\d{2})|\d{2})*\s{0,}[)]{1,}", # (Out On OZ Records 19 April ) # (Out On OZ Records on March 19th)
+    r"(?i)[(]{1,}\s{0,1}Part\s{0,}(\s{0,1}\b\w+){1,3}\s{0,}[)]{1,}", # (Part One)
+    r"(?i)[(]{1,}\s{0,1}(\s{0,1}\b\w+){0,3}\s{0,}Out\s{0,}\W+Now\W+(\s{0,1}\b\w+){0,3}\s{0,}[)]{1,}", # (Monsters 8 out now!)
+    r"(?i)[(]{1,}\s{0,1}Free\s{1,}DL\s{0,}[)]{1,}", # (Free DL) 
+    r"(?i)[(]{1,}\s{0,}O[f]{0,2}icial\s{1,}(\s{0,1}\b\w+){0,3}\s{0,}Compilation{0,}\s{0,}[)]{1,}", # (Official Music Video Compilation)
+    r"(?i)[(]{1,}\s{0,}Clip\s{1,}Of{1,2}icial\s{0,}[)]{1,}", # (clip official)
+    r"(?i)[(]{1,}\s{0,}Director's\s{1,}Cut\s{0,}[)]{1,}", # (Director's Cut)
+    r"(?i)[(]{1,}\s{0,}Tour\s{1,}Trailer\s{0,}[)]{1,}", # (Tour Trailer)
+    r"(?i)[(]{1,}\s{0,}English\s{1,}Version\s{0,}[)]{1,}", # (English Version)
+    r"(?i)[(]{1,}\s{0,}Tour\s{1,}Trailer\s{0,}(\s{0,1}\b\w+){0,3}\s{0,}[)]{1,}", # (Tour Trailer)
+    r"(?i)[(]{1,}\s{0,}Of{1,2}ficial\s{1,}Video\s{0,}(\s{0,1}\b\w+){0,3}\s{0,}[)]{1,}", # (Official Video Live at Freshtival)
+    r"(?i)[(]{1,}\s{0,}Of{1,2}ficial\s{1,}(\s{0,1}\b\w+){0,3}\s{0,}Video\s{0,}(\s{0,1}\b\w+){0,3}\s{0,}[)]{1,}", # (Official Short Video Version HD)
+    r"(?i)[(]{1,}\s{0,}Full\s{1,}Version\s{0,}[)]{1,}", # (Full Version)
+    r"(?i)[(]{1,}\s{0,}Demo\s{1,}Clip\s{0,}[)]{1,}", # (demo clip)
+    r"(?i)[(]{1,}\s{0,}Clip\s{1,}Of{1,2}iciel\s{0,}[)]{1,}", # (Clip Officiel)
+    r"(?i)[(]{1,}\s{0,}#(\s{0,1}\b\w+){1}\s{0,}[)]{1,}", # (#360RA)
+    r"(?i)[(]{1,}\s{0,}Video\s{0,}(\s{0,1}\b\w+){0,3}\s{0,}Version{0,}\s{0,}[)]{1,}", # Bomfunk MC's - Freestyler (Video Original Version)
+    r"\s{1,}OUT\s{1,}NOW", # (The Asylum OUT NOW)
+    r"(?i)[(]{1,}\s{0,}OUT\s{1,}\d{2}[.]{1}\d{2,4}\s{0,}[)]{1,}",  # (OUT 10.24)
+    r"(?i)\bAudio\b", # Word Audio
+    r"\s{0,}\/\s{0,}(?=[)])", # Okay (Blush Remix / )
+    r"\s{0,}\-\s{0,}(?=[)])", # Clean up after dash
 
     # MOONBOY - ALIEN INVAZION (RIDDIM/DUBSTEP)
-    # (Official Visual) 
     
-    # (Out On OZ Records on March 19th
-    # (Official HQ Preview)
-    # (Official Lyric Video HD)
-    # (Original Song)
-    # 
-    # 
-    # (Uncensored HD Official UK Version)
-    # (Making Of)
-    # Cakeface (Official Music Video/Cakeface Compilation)
-    # (Part One)
-    # (Monsters 8 out now!)
-    # (Free DL) 
-    # (Official Preview)
-    # (We Love House Music)
-    # (DUBSTEP/RIDDIM) - seperate all words 
+    #
+    #
+    #
+    #
+    #
+    # Shotgun Feat. (MagMag) - DJ BL3ND, Rettchit [Firepower Records - Dubstep]
+   
     # GRAViiTY - ELEVATiON (#Chillstep)
-    #  Razihel Feat. TeamMate - Legend (ZATOX RMX) - Turn RMX to Remix
-
-
+    # Razihel Feat. TeamMate - Legend (ZATOX RMX) - Turn RMX to Remix - Some chords (Jauz ReRemix)
 ] 
 
-def clean_unrequired_from_parenthesis(track):
-    if track.find('(')!=-1:
-        for regex in CLEAN_PARENTHESIS:
-            track = re.sub(regex, "", track, flags=re.IGNORECASE)
 
+
+def clean_unrequired_from_parenthesis(track):
+    for regex in CLEAN_PARENTHESIS:
+        track = re.sub(regex, "", track, flags=re.IGNORECASE)
+        
     # Remove Multiple Spaces
     track = ' '.join(track.split())
     
@@ -588,15 +829,35 @@ def clean_unrequired_from_parenthesis(track):
 
     return track
 
-def remove_parenthesis(track):
-
-
-    return track
-
 STRIP_SPECIFIC_WORDS = [
     r"(?i)\btik[-]{0,1}tok\b",
     r"(?i)\btik[-]{0,1}\s{1,}tok\b"
 ]
+
+word_seperators = [
+    r"(?<=[a-zA-Z])\\(?=[a-zA-Z]{2,})",
+    r"(?<=[a-zA-Z])[|]{1}(?=[a-zA-Z]{2,})",
+    r"(?<=[a-zA-Z])//(?=[a-zA-Z]{2,})",
+    r"(?<=[a-zA-Z])/(?=[a-zA-Z]{2,})"
+]
+
+def get_all_integers_between_square_brackets(string):
+    matches = []
+    for x in word_seperators:
+        pattern = re.compile(x)
+        for match in re.finditer(pattern, string):
+            matches.append(int(match.start()))
+    
+    return matches
+
+def seperate_backslash_words(track):  
+    matches = get_all_integers_between_square_brackets(track)
+
+    if len(matches) > 0:
+        for index in matches:
+            track = track.replace(track[index]," ", 1)
+
+    return track
 
 def strip_specific_words(track):
     for regex in STRIP_SPECIFIC_WORDS:
@@ -606,7 +867,6 @@ def strip_specific_words(track):
     track = ' '.join(track.split())
 
     return track 
-
 
 Escape_Words = ["the","and","are","is","was","were","by","of","no","so","with","be","to"]
 
@@ -639,7 +899,6 @@ def clean_track_for_extraction_vol2(my_str):
     my_str = re.sub(r"\s\s+" , " ", my_str)
     my_str = re.sub(r"\s{2,}", " ", my_str)
 
-
     return my_str
 
 
@@ -652,7 +911,6 @@ def find(str, ch):
 def clear_title(title):
     for regex in FIRST_LEVEL:
         title = re.sub(regex, "", title, flags=re.IGNORECASE)
-    
     
     return title
 

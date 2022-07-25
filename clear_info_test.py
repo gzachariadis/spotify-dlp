@@ -1,4 +1,5 @@
 from methods import *
+from spotify import *
 import sys
 import json
 # Pull json from bash
@@ -14,7 +15,7 @@ youtube_video_full_title = youtube_information['fulltitle']
 print("Video title identified as {}.".format(youtube_video_full_title).strip())
 
 # Remove Things that might mess with identification
-print("Removing Emoji's....")
+
 youtube_video_full_title = deEmojify(youtube_video_full_title)
 print(youtube_video_full_title)
 print("\n")
@@ -34,23 +35,31 @@ print("\n")
 print("clean_unrequired_from_parenthesis")
 """
 
-if youtube_video_full_title.find('(')!=-1:
-    youtube_video_full_title = clean_unrequired_from_parenthesis(youtube_video_full_title)
-    
-    if youtube_video_full_title.find('(')!=-1:
-        
-        youtube_video_full_title = re.sub(r'(?i)(?<!^)[(]{1,}\s{0,}.*\bRemix\b.*\s{0,}[)]{1,}', '', youtube_video_full_title)
-        youtube_video_full_title = re.sub(r'(?i)(?<!^)[(]{1,}\s{0,}.*\bft\b.*\s{0,}[)]{1,}', '', youtube_video_full_title)
-        youtube_video_full_title = re.sub(r'(?i)(?<!^)[(]{1,}\s{0,}.*\bfeat\b.*\s{0,}[)]{1,}', '', youtube_video_full_title)
-        youtube_video_full_title = re.sub(r'(?i)(?<!^)[(]{1,}\s{0,}.*\bMix\b.*\s{0,}[)]{1,}', '', youtube_video_full_title)
-        youtube_video_full_title = re.sub(r'(?i)(?<!^)[(]{1,}\s{0,}.*\bEdit\b.*\s{0,}[)]{1,}', '', youtube_video_full_title)
-        youtube_video_full_title = re.sub(r'(?i)(?<!^)[(]{1,}\s{0,}.*\bAnthem\b.*\s{0,}[)]{1,}', '', youtube_video_full_title)
-        youtube_video_full_title = re.sub(r'(?i)(?<!^)[(]{1,}\s{0,}.*\bVIP\b.*\s{0,}[)]{1,}', '', youtube_video_full_title)
+print(youtube_video_full_title)
 
+youtube_video_full_title = deEmojify(youtube_video_full_title)
+youtube_video_full_title = seperate_backslash_words(youtube_video_full_title)
+youtube_video_full_title = replace_special_seperators(youtube_video_full_title)
 
-    if youtube_video_full_title.find('(')!=-1:
-        print(youtube_video_full_title)
-        print("\n")
+print(youtube_video_full_title)
+
+youtube_video_full_title = clean_unrequired_from_parenthesis(youtube_video_full_title)
+
+print(youtube_video_full_title)
+
+youtube_video_full_title = clean_second_dash(youtube_video_full_title)
+youtube_video_full_title = capitalize_parenthesis(youtube_video_full_title)
+youtube_video_full_title = convert_string(youtube_video_full_title)
+
+print(youtube_video_full_title)
+
+print("\n")
+
+youtube_video_full_title = clean_brackets(youtube_video_full_title)
+
+print(youtube_video_full_title)
+
+print("\n")
 
 """
 print("New Title {}".format(youtube_video_full_title))
