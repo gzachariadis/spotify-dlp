@@ -69,6 +69,8 @@ youtube_video_full_title = ade_seperate_track_artist(youtube_video_full_title)
 
 youtube_video_full_title = strip_specific_words(youtube_video_full_title)
 
+youtube_video_full_title = remove_miscellaneous(youtube_video_full_title)
+
 print(youtube_video_full_title)
 
 print(capitalize_words_correctly(youtube_video_full_title))
@@ -81,21 +83,19 @@ print(youtube_video_full_title)
 print("\n")
 
 
+
 """
-San Holo - The Future (ft. James Vincent McMorrow) [Official Audio]
-Kontinuum - Lost (Feat. Savoi) [jjd Remix] | Ncs Release
+
 Shapov & Meg \ Nerak - Breathing Deeper
 
 If I Die Young - the Band Per - Y-lyrics! :)
 
-Yellow Claw & Juyen Sebulba - DO you Like Bass?
 
 Rosa Linn - Snap - Armenia -
 Rosa Linn - Snap - Armenia -
+FREE DOWNLOAD
 
 Welcome to Planet Urf | Login Screen - League of Legends
-
-Professional Sinnerz - Όταν Σε Είχα Πρωτοδεί | Official Video Clip
 
 EVA – 失望した [Synthwave] 🎵 from Royalty Free Planet™
 
@@ -109,18 +109,7 @@ Jay Sean - DOWN Ft. Lil Wayne
 
 Εισβολέας Featuring O Live & Τάκι Τσαν-Όλοι Μαζί Τώρα
 
-| Slam! Mixmarathon Xxl @ Ade 2019
-| Free Flesh
-
-
 @area21
-
-Swedish House Mafia ft. John Martin - Don't You Worry Child (Official Video)
-Swedish House Mafia ft. John Martin - Dont You Worry Child
-
-
-Oliver Heldens - Kingsday 2016 Aftermovie
-
 
 (2η εκδοχή)
 
@@ -128,24 +117,30 @@ Oliver Heldens - Kingsday 2016 Aftermovie
 
 aespa 에스파 'Life's Too Short (English Ver.)' MV
 
-
-Robin Schulz & Hugel - I Believe I'm Fine
-Robin Schulz & Hugel - I Believe Im Fine
-
-Giants - Πρίν Σου Πεί Σαγαπώ.wmv
-
-- Priority One & Twothirds - Hunted (feat. Jonny Rose) [monstercat Release]
+Noisia - Diplodocus (Noisia's 'Outer Edges' Remix)
+Noisia - Diplodocus (Noisia S Outer Edges' Remix)
 
 Ariana Grande - pov
+
+Laidback Luke & Made in June Paradise (Ft. Bright Lights) | Dim Mak Records
 
 Lauren Spencer-Smith - Fingers Crossed (Lyrics)
 Lauren Spencer - Smith - Fingers Crossed
 Lauren Spencer - Smith - Fingers Crossed
 
-
-Fly Project - Toca Toca | Official Music Video
-
 Passenger | Let Her Go
+
+Ferry Corsten - Reanimate ft Clairity
+
+Sem Vox - Get It Up (DLDK Amsterdam 2016 Anthem)
+
+
+Carl Nunes -white Dress
+
+
+Above & Beyond & Justine Suissa - Alright Now (Above & Beyond Club Mix) Live at Ultra 2017
+
+
 
 print("New Title {}".format(youtube_video_full_title))
 

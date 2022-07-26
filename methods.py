@@ -543,8 +543,12 @@ CLEAN_BRACKETS = [
     r"(?i)\[{1,}\s{0,}Copyright\s{1,}Free\s{0,}\]{1,}", # [copyright Free]
     r"(?i)\[{1,}\s{0,}Coachella(\s{0,1}\b\w+){1,2}\s{0,}\]{1,}", # [coachella Weekend 2]
     r"(?i)\[{1,}\s{0,}Unreleased(\s{0,1}\b\w+){0,2}\s{0,}\]{1,}", # [Unreleased]
-    r"(?i)\{{1,}\s{0,}(?:HD)?\s{0,}?(?:HQ)?\s{0,}?Edit\s{0,}\}{1,}" # {HD Edit} 
-    r"(?i)\[{1,}\s{0,}\s{0,}(?:\b\w+\s{0,}){1,2}\s{0,}Stream\s{0,}\]{1,}" # [official Full Stream]
+    r"(?i)\{{1,}\s{0,}(?:HD)?\s{0,}?(?:HQ)?\s{0,}?Edit\s{0,}\}{1,}", # {HD Edit} 
+    r"(?i)\[{1,}\s{0,}\s{0,}(?:\b\w+\s{0,}){1,2}\s{0,}Stream\s{0,}\]{1,}", # [official Full Stream]
+    r"(?i)\[{1,}\s{0,}Monstercat\s{0,}\]{1,}", # Monstercat
+    r"(?i)\[{1,}s{0,}The\s{1,}Best\s{1,}of\s{1,}(?:\b\w+\s{0,}){1,5}\s{0,}\]{1,}", #  [The Best Of Armin Only Anthem]
+    r"(?i)\[{1,}s{0,}Theme\s{1,}Song\s{0,}(?:\b\w+\s{0,}){1,5}\s{0,}\]{1,}", #[Theme Song From Kill Switch]
+    r"(?i)\[{1,}\s{0,}\W+\s{0,}tune\s{1,}(?:\b\w+\s{0,}){1,5}\s{0,}\]{1,}" # **tune of the Week
 
 ]   
 
@@ -841,8 +845,11 @@ CLEAN_PARENTHESIS = [
     r"(?i)[(]{1,}\s{0,}Copyright\s{1,}Free\s{0,}[)]{1,}",  # (copyright Free)
     r"(?i)[(]{1,}\s{0,}Coachella(\s{0,1}\b\w+){1,2}\s{0,}[)]{1,}", # [coachella Weekend 2]
     r"(?i)[(]{1,}\s{0,}Unreleased\s{0,}[)]{1,}", # Unreleased
-    r"(?i)[(]{1,}\s{0,}\s{0,}(?:\b\w+\s{0,}){1,2}\s{0,}Stream\s{0,}[)]{1,}" # 2 Words + Stream
-    
+    r"(?i)[(]{1,}\s{0,}\s{0,}(?:\b\w+\s{0,}){1,2}\s{0,}Stream\s{0,}[)]{1,}", # 2 Words + Stream
+    r"(?i)[(]{1,}\s{0,}Monstercat\s{0,}[)]{1,}", # Monstercat
+    r"(?i)[(]{1,}\s{0,}The\s{1,}Best\s{1,}of\s{1,}(?:\b\w+\s{0,}){1,5}\s{0,}[)]{1,}", # (The Best Of Armin Only Anthem)
+    r"(?i)[(]{1,}s{0,}Theme\s{1,}Song\s{0,}(?:\b\w+\s{0,}){1,5}\s{0,}[)]{1,}",  # Theme Song ...
+    r"(?i)[(]{1,}\s{0,}\W+\s{0,}tune\s{1,}(?:\b\w+\s{0,}){1,5}\s{0,}[)]{1,}" # (**tune of the Week)
     # MOONBOY - ALIEN INVAZION (RIDDIM/DUBSTEP)
 
     # Shotgun Feat. (MagMag) - DJ BL3ND, Rettchit [Firepower Records - Dubstep]
@@ -931,7 +938,23 @@ def strip_specific_words(track):
 
     return track 
 
-Escape_Words = ["the","and","are","is","was","were","by","of","no","so","with","be","to","a","be","ft."]
+MISC_LIST = [
+    r"(?i)\.(mp4|mkv|wmv|mp3|m4v|mov|avi|flv|webm|flac|mka|m4a|aac|oggswf|avi|flv|mpg|rm|mov|wav|asf|3gp|mkv|rmvb|mp4)(\s{1,}|$)",
+
+]
+
+
+def remove_miscellaneous(track):
+
+    if track.find("-") != -1:
+        track = re.sub(r"(?i)[|]{1,}\s{0,}(\s{0,1}\b\w+){0,3}\s{0,}$","",track, flags=re.IGNORECASE)
+        track = re.sub(r"[|]{1,2}\s{1,}.*$","",track, flags=re.IGNORECASE)
+
+    for regex in MISC_LIST:
+        track = re.sub(regex,"",track, flags=re.IGNORECASE)
+    return track
+
+Escape_Words = ["the","and","are","is","was","were","by","of","no","so","with","be","to","a","be","ft.","n","v","vs","us","me"]
 
 def clean_track_for_extraction(my_str):
     my_str = re.sub("(?=[a-zA-Z])Audio(?=[a-zA-Z])", " ",my_str, flags=re.IGNORECASE)
@@ -1373,7 +1396,8 @@ def remove_quotes_from_string(youtube_video_full_title):
 
 FINAL_CLEANUP_LIST = [
     r"\s{0,}\-\s{0,}(?=\])", # Clean up after dash
-    r"\s{0,}([^)\w\s]|_|\s{0,})+(?=\s|$)\s{0,}$", # Special Characters and Spaces at the end of String
+    r"\s{0,}([^)\']\w\s]|_|\s{0,})+(?=\s|$)\s{0,}$", # Special Characters and Spaces at the end of String
+    r"^\W+"
 ]
 
 def final_cleanup(youtube_video_full_title):
