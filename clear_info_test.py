@@ -41,27 +41,112 @@ youtube_video_full_title = deEmojify(youtube_video_full_title)
 youtube_video_full_title = seperate_backslash_words(youtube_video_full_title)
 youtube_video_full_title = replace_special_seperators(youtube_video_full_title)
 
-print(youtube_video_full_title)
+# print(find_tags(youtube_video_full_title))
 
 youtube_video_full_title = clean_unrequired_from_parenthesis(youtube_video_full_title)
-
-print(youtube_video_full_title)
 
 youtube_video_full_title = clean_second_dash(youtube_video_full_title)
 youtube_video_full_title = capitalize_parenthesis(youtube_video_full_title)
 youtube_video_full_title = convert_string(youtube_video_full_title)
 
-print(youtube_video_full_title)
-
-print("\n")
-
 youtube_video_full_title = clean_brackets(youtube_video_full_title)
 
+if (youtube_video_full_title.find(')') != -1):
+    all_string_parenthesis = matching_parentheses(youtube_video_full_title)
+   
+    if (len(all_string_parenthesis.keys()) > 1):
+        keys=list(sorted(all_string_parenthesis.keys()))  #get list of keys from dictionary
+        keys.pop(0)  #Remove first in list of keys
+        for key in keys:
+            no_delete =  re.search(r"(?i)^((?!Remix|Mix|feat|featuring|Feat[.]{1}|ft[.]{1}).)*$",youtube_video_full_title, re.IGNORECASE)
+            if no_delete is not None:
+                youtube_video_full_title = youtube_video_full_title[:key-1] + youtube_video_full_title[all_string_parenthesis[key]+1:]
+                print(youtube_video_full_title)
+
+youtube_video_full_title = remove_quotes_from_string(youtube_video_full_title)
+
+youtube_video_full_title = ade_seperate_track_artist(youtube_video_full_title)
+
+youtube_video_full_title = strip_specific_words(youtube_video_full_title)
+
 print(youtube_video_full_title)
 
+print(capitalize_words_correctly(youtube_video_full_title))
+
+print(capitalize_parenthesis(youtube_video_full_title))
+
+youtube_video_full_title = final_cleanup(youtube_video_full_title)
+
+print(youtube_video_full_title)
 print("\n")
 
+
 """
+San Holo - The Future (ft. James Vincent McMorrow) [Official Audio]
+Kontinuum - Lost (Feat. Savoi) [jjd Remix] | Ncs Release
+Shapov & Meg \ Nerak - Breathing Deeper
+
+If I Die Young - the Band Per - Y-lyrics! :)
+
+Yellow Claw & Juyen Sebulba - DO you Like Bass?
+
+Rosa Linn - Snap - Armenia -
+Rosa Linn - Snap - Armenia -
+
+Welcome to Planet Urf | Login Screen - League of Legends
+
+Professional Sinnerz - Όταν Σε Είχα Πρωτοδεί | Official Video Clip
+
+EVA – 失望した [Synthwave] 🎵 from Royalty Free Planet™
+
+Kubbi / Cascade
+
+Ouse - ｆａｒｃｒｙツ
+Ouse -
+
+Jay Sean - Down ft. Lil Wayne
+Jay Sean - DOWN Ft. Lil Wayne
+
+Εισβολέας Featuring O Live & Τάκι Τσαν-Όλοι Μαζί Τώρα
+
+| Slam! Mixmarathon Xxl @ Ade 2019
+| Free Flesh
+
+
+@area21
+
+Swedish House Mafia ft. John Martin - Don't You Worry Child (Official Video)
+Swedish House Mafia ft. John Martin - Dont You Worry Child
+
+
+Oliver Heldens - Kingsday 2016 Aftermovie
+
+
+(2η εκδοχή)
+
+Αμερικανικα / Εισβολέας Feat. Μάριος Νταβέλης
+
+aespa 에스파 'Life's Too Short (English Ver.)' MV
+
+
+Robin Schulz & Hugel - I Believe I'm Fine
+Robin Schulz & Hugel - I Believe Im Fine
+
+Giants - Πρίν Σου Πεί Σαγαπώ.wmv
+
+- Priority One & Twothirds - Hunted (feat. Jonny Rose) [monstercat Release]
+
+Ariana Grande - pov
+
+Lauren Spencer-Smith - Fingers Crossed (Lyrics)
+Lauren Spencer - Smith - Fingers Crossed
+Lauren Spencer - Smith - Fingers Crossed
+
+
+Fly Project - Toca Toca | Official Music Video
+
+Passenger | Let Her Go
+
 print("New Title {}".format(youtube_video_full_title))
 
 

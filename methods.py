@@ -1,7 +1,9 @@
 from __future__ import print_function
 from ast import pattern
 from calendar import c
+from curses.ascii import islower
 import re
+from turtle import title
 import music_metadata_filter.functions as functions
 import pwd
 import os 
@@ -523,13 +525,36 @@ CLEAN_BRACKETS = [
     r"(?i)\[{1,}\s{0,}OUT\s{1,}\d{2}[.]{1}\d{2,4}\s{0,}\]{1,}",  # (OUT 10.24)
     r"(?i)\bAudio\b", # Word Audio
     r"\s{0,}\/\s{0,}(?=\])", # Okay (Blush Remix / )
-    r"\s{0,}\-\s{0,}(?=\])" # Clean up after dash
-]
+    r"(?i)\[{1,}\s{0,}(?:The)?\s{0,}?Best\s{1,}of\s{1,}.*\s{0,}\]{1,}", # Armin van Buuren Feat. Ray Wilson - Yet Another Day (Ucast Remix) [the Best of Armin Only]
+    r"(?i)\[{1,}\s{0,}(?:HD)?\s{0,}?(?:HQ)?\s{0,}?Edit\s{0,}\]{1,}", # [hq Edit]
+    r"(?i)\[{1,}\s{0,}O[f]{1,2}icial\s{1,}\s{0,}(?:360°)?\s{0,}?\s{0,}(?:VR)?\s{0,}?\s{0,}(?:Music)?\s{0,}?Video\s{0,}\]{1,}",
+    r"(?i)\[{1,}\s{0,}Exclusive\s{1,}by.*\]{1,}", # [exclusive by Brian Ferreyra]
+    r"(?i)\[{1,}\s{0,}O[f]{1,2}icial\s{1,}(?:Music)?\s{0,}?(?:Video)?\s{0,}?Re-cut\s{0,}\]{1,}", # [Official Music Video Re-cut]
+    r"(?i)\[{1,}\s{0,}Busted\s{1,}by\s{1,}(?:\b\w+\s{0,}){1,2}\]{1,}", # [Busted By Herobust Workings ]
+    r"(?i)\[{1,}\s{0,}Downtempo\s{0,}(?:Version)?\s{0,}\]{1,}", # Downtempo Version
+    r"(?i)\[{1,}\s{0,}Halloween\s{0,}(?:Version)?\s{0,}(?:Edition)?\s{0,}(?:Edit)?\s{0,}\]{1,}", # Halloween Edit
+    r"(?i)//\s{1,}(?:\b\w+\s{0,}){1,2}Music\s{0,}$", # // Hybrid Music
+    r"(?i)\[{1,}\s{0,}Billboard\s{0,}(?:\b\w+\s{0,}){1,3}\s{0,}\]{1,}", # [Billboard Top Songs 2021]
+    r"(?i)\[{1,}\s{0,}(?:\b\w+\s{0,}){1}\s{0,}O[f]{1,2}icial\]{1,}", # Word + Official
+    r"(?i)\[{1,}\s{0,}(?:\b\w+\s{0,}){1,2}\s{0,}Music\]{1,}", # Words + Music
+    r"(?i)\[{1,}\s{0,}O[f]{1,2}icial\s{1,}\s{0,}(?:Movie)?\s{0,}?\s{0,}(?:MV)?\s{0,}?\s{0,}\]{1,}", # Official MV
+    r"(?i)\[{1,}s{0,}(?:\b\w+\s{0,}){1,2}Release\s{0,}\]{1,}", # [monstercat Release] [Monstercat EP Release] [ncs Release]
+    r"(?i)\[{1,}\s{0,}Clean\s{1,}\W+Lyrics\s{0,}\]{1,}", # [Clean - Lyrics]
+    r"(?i)\[{1,}\s{0,}Copyright\s{1,}Free\s{0,}\]{1,}", # [copyright Free]
+    r"(?i)\[{1,}\s{0,}Coachella(\s{0,1}\b\w+){1,2}\s{0,}\]{1,}", # [coachella Weekend 2]
+    r"(?i)\[{1,}\s{0,}Unreleased(\s{0,1}\b\w+){0,2}\s{0,}\]{1,}", # [Unreleased]
+    r"(?i)\{{1,}\s{0,}(?:HD)?\s{0,}?(?:HQ)?\s{0,}?Edit\s{0,}\}{1,}" # {HD Edit} 
+    r"(?i)\[{1,}\s{0,}\s{0,}(?:\b\w+\s{0,}){1,2}\s{0,}Stream\s{0,}\]{1,}" # [official Full Stream]
+
+]   
 
 def clean_brackets(track):
     for regex in CLEAN_BRACKETS:
         track = re.sub(regex, "", track, flags=re.IGNORECASE)
     
+    if (track.find(')') != -1):
+        track = re.sub(r"(?i)\[{1,}\s{0,}O[f]{0,2}icial\s{0,}\]{1,}","", track, flags=re.IGNORECASE)
+        
     return track
 
 special_seperators = [r"[|]"]
@@ -681,11 +706,11 @@ CLEAN_PARENTHESIS = [
     r"(?i)[(]{1,}\s{0,}(?:Unreleased)?\s{0,}?\s{0,}(?:Exclusive)?\s{0,}?\s{0,}(?:4K)?\s{0,}?\s{0,}Audio\s{0,}[)]{1,}", # (Unreleased Tribute Music Audio)
     r"(?i)[(]{1,}\s{0,}(?:Exclusive)?\s{0,}?\s{0,}(?:Music)?\s{0,}?\s{0,}(?:HQ)?\s{0,}?\s{0,}Audio\s{0,}[)]{1,}", # (Exclusive Music Audio)     # (Unreleased Audio)
     r"(?i)[(]{1,}\s{0,}(?:(?:\b\w+){0,2})\s{0,}(?:Exclusive)?\s{0,}?\s{0,}(?:- Official)?\s{0,}?\s{0,}(?:Music)?\s{0,}?\s{0,}Video\s{0,}[)]{1,}",  # ( 2 Words - Official Music Video)
-    r"(?i)[(]\s{0,}Remix\s{0,}[)]{1,}",  # (Remix)
-    r"(?i)[(]\s{0,}Dirty\s{0,}[)]{1,}",  # (Dirty)
-    r"(?i)[(]\s{0,}Unreleased\s{0,}[)]{1,}", # (Unreleased)
-    r"(?i)[(]\s{0,}New\s{0,}[)]{1,}",   # (New)
-    r"(?i)[(]\s{0,}Remake\s{0,}[)]{1,}",  # (Remake)
+    r"(?i)[(]{1,}\s{0,}Remix\s{0,}[)]{1,}",  # (Remix)
+    r"(?i)[(]{1,}\s{0,}Dirty\s{0,}[)]{1,}",  # (Dirty)
+    r"(?i)[(]{1,}\s{0,}Unreleased\s{0,}[)]{1,}", # (Unreleased)
+    r"(?i)[(]{1,}\s{0,}New\s{0,}[)]{1,}",   # (New)
+    r"(?i)[(]{1,}\s{0,}Remake\s{0,}[)]{1,}",  # (Remake)
     r"(?i)[(]{1,}\s{0,}\s{0,}\s{0,}Shot\s{1,}by\s{1,}.*[)]{1,}", # Shot By.....
     r"[(]\s{0,}[)]", # Removing Empty Parenthesis
     r"(?i)[(]{1,}\s{0,}(?:O[f]{0,2}icial)?\s{0,}?(?:HD)?\s{0,}?(?:Video)?\s{0,}?\s{0,}Release\s{0,}[)]{1,}",  # (Official Video Release)
@@ -799,21 +824,32 @@ CLEAN_PARENTHESIS = [
     r"(?i)\bAudio\b", # Word Audio
     r"\s{0,}\/\s{0,}(?=[)])", # Okay (Blush Remix / )
     r"\s{0,}\-\s{0,}(?=[)])", # Clean up after dash
-
-    # MOONBOY - ALIEN INVAZION (RIDDIM/DUBSTEP)
+    r"(?i)[(]{1,}\s{0,}Starring\s{1,}(?:\b\w+\s{0,}){1,2}\s{0,}[)]{1,}", #3lau - On My Mind ft. Yeah Boy (Starring Gronk) 
+    r"(?i)[(]{1,}\s{0,}(?:HD)?\s{0,}?(?:HQ)?\s{0,}?Edit\s{0,}[)]{1,}", # (hq Edit)
+    r"(?i)[(]{1,}\s{0,}O[f]{1,2}icial\s{1,}\s{0,}(?:360°)?\s{0,}?\s{0,}(?:VR)?\s{0,}?\s{0,}(?:Music)?\s{0,}?Video\s{0,}[)]{1,}",
+    r"(?i)[(]{1,}\s{0,}Exclusive\s{1,}by.*[)]{1,}", # Exclusive by...
+    r"(?i)[(]{1,}\s{0,}O[f]{1,2}icial\s{1,}(?:Music)?\s{0,}?(?:Video)?\s{0,}?Re-cut\s{0,}[)]{1,}", # Official Music Video Re-cut    
+    r"\s{0,}[*]{1,}(\s{0,1}\b\w+){1}[*]{1,}\s{0,}", # **totw**
+    r"(?i)[(]{1,}\s{0,}Downtempo\s{0,}(?:Version)?\s{0,}[)]{1,}",
+    r"(?i)[(]{1,}\s{0,}Halloween\s{0,}(?:Version)?\s{0,}(?:Edition)?\s{0,}(?:Edit)?\s{0,}[)]{1,}",
+    r"(?i)[(]{1,}\s{0,}Billboard\s{0,}(?:\b\w+\s{0,}){1,3}\s{0,}[)]{1,}", # (Billboard Top Songs 2021)
+    r"(?i)[(]{1,}\s{0,}(?:\b\w+\s{0,}){1,2}\s{0,}Music[)]{1,}", # (Ultra Music)
+    r"(?i)[(]{1,}\s{0,}(?:\b\w+\s{0,}){1}\s{0,}O[f]{1,2}icial[)]{1,}", #(Videoclip Oficial)
+    r"(?i)[(]{1,}\s{0,}O[f]{1,2}icial\s{1,}\s{0,}(?:Movie)?\s{0,}?\s{0,}(?:MV)?\s{0,}?\s{0,}[)]{1,}", # (Official Mv)
+    r"(?i)[(]{1,}\s{0,}(?:\b\w+\s{0,}){1,2}Release\s{0,}[)]{1,}", # (monstercat  Release)
+    r"(?i)[(]{1,}\s{0,}Clean\s{1,}\W+Lyrics\s{0,}[)]{1,}", # (Clean - Lyrics)
+    r"(?i)[(]{1,}\s{0,}Copyright\s{1,}Free\s{0,}[)]{1,}",  # (copyright Free)
+    r"(?i)[(]{1,}\s{0,}Coachella(\s{0,1}\b\w+){1,2}\s{0,}[)]{1,}", # [coachella Weekend 2]
+    r"(?i)[(]{1,}\s{0,}Unreleased\s{0,}[)]{1,}", # Unreleased
+    r"(?i)[(]{1,}\s{0,}\s{0,}(?:\b\w+\s{0,}){1,2}\s{0,}Stream\s{0,}[)]{1,}" # 2 Words + Stream
     
-    #
-    #
-    #
-    #
-    #
+    # MOONBOY - ALIEN INVAZION (RIDDIM/DUBSTEP)
+
     # Shotgun Feat. (MagMag) - DJ BL3ND, Rettchit [Firepower Records - Dubstep]
    
     # GRAViiTY - ELEVATiON (#Chillstep)
     # Razihel Feat. TeamMate - Legend (ZATOX RMX) - Turn RMX to Remix - Some chords (Jauz ReRemix)
 ] 
-
-
 
 def clean_unrequired_from_parenthesis(track):
     for regex in CLEAN_PARENTHESIS:
@@ -831,19 +867,35 @@ def clean_unrequired_from_parenthesis(track):
 
 STRIP_SPECIFIC_WORDS = [
     r"(?i)\btik[-]{0,1}tok\b",
-    r"(?i)\btik[-]{0,1}\s{1,}tok\b"
+    r"(?i)\btik[-]{0,1}\s{1,}tok\b",
+    r"(?i)\bO[f]{1,2}icial\b\s{1,}\bMusic\b\s{1,}\bVideo\b\s{0,}",
+    r"(?i)\s{1,}O[f]{1,2}icial\s{1,}Movie\s{0,}",
+    r"(?i)\s{1,}O[f]{1,2}icial\s{1,}MV\s{0,}",
+    r"(?i)\s{1,}O[f]{1,2}icial\s{1,}Video\s{0,}",
+    r"(?i)\s{1,}with\s{1,}lyrics\W+(\s{1,}|$)",
+    r"(?i)\s{1,}Lyrics(\s{1,}|$)",
+    r"(?i)\s{1,}AfterMovie(\s{1,}|$)",
+    r"(?i)\s{1,}Official\s{1,}Music\s{1,}Video(\s{1,}|$)",
+    r"(?i)\s{1,}Video\s{1,}Ufficiale(\s{1,}|$)",
+    r"(?i)\s{1,}Official\s{1,}Video(\s{1,}|$)",
+    r"(?i)\s{1,}Spinnin[']{0,1}\s{1,}Records\s{1,}Anniversary(\s{1,}|$)",
+    r"(?i)\s{1,}Lyrics[.]{1,}(\s{1,}|$)"
+]
+
+artist_track_seperators = [
+    r"(?<=[a-zA-Z])-(?=[a-zA-Z]{2,})"  
 ]
 
 word_seperators = [
     r"(?<=[a-zA-Z])\\(?=[a-zA-Z]{2,})",
     r"(?<=[a-zA-Z])[|]{1}(?=[a-zA-Z]{2,})",
     r"(?<=[a-zA-Z])//(?=[a-zA-Z]{2,})",
-    r"(?<=[a-zA-Z])/(?=[a-zA-Z]{2,})"
+    r"(?<=[a-zA-Z])/(?=[a-zA-Z]{2,})",  
 ]
 
-def get_all_integers_between_square_brackets(string):
+def get_all_integers_between_square_brackets(string,list_to_check):
     matches = []
-    for x in word_seperators:
+    for x in list_to_check:
         pattern = re.compile(x)
         for match in re.finditer(pattern, string):
             matches.append(int(match.start()))
@@ -851,13 +903,24 @@ def get_all_integers_between_square_brackets(string):
     return matches
 
 def seperate_backslash_words(track):  
-    matches = get_all_integers_between_square_brackets(track)
+    matches = get_all_integers_between_square_brackets(track,word_seperators)
 
     if len(matches) > 0:
         for index in matches:
             track = track.replace(track[index]," ", 1)
 
     return track
+
+def ade_seperate_track_artist(full_title):
+    matches = get_all_integers_between_square_brackets(full_title,artist_track_seperators)
+
+    if len(matches) > 0:
+        for index in matches:
+            full_title = full_title[0:int(index)] + " - " + full_title[int(index)+1:]
+    
+    full_title = convert_string(full_title)            
+
+    return full_title
 
 def strip_specific_words(track):
     for regex in STRIP_SPECIFIC_WORDS:
@@ -868,7 +931,7 @@ def strip_specific_words(track):
 
     return track 
 
-Escape_Words = ["the","and","are","is","was","were","by","of","no","so","with","be","to"]
+Escape_Words = ["the","and","are","is","was","were","by","of","no","so","with","be","to","a","be","ft."]
 
 def clean_track_for_extraction(my_str):
     my_str = re.sub("(?=[a-zA-Z])Audio(?=[a-zA-Z])", " ",my_str, flags=re.IGNORECASE)
@@ -900,8 +963,6 @@ def clean_track_for_extraction_vol2(my_str):
     my_str = re.sub(r"\s{2,}", " ", my_str)
 
     return my_str
-
-
 
 def find(str, ch):
     for i, ltr in enumerate(str):
@@ -940,6 +1001,14 @@ def find_separator(title):
         except:
             continue
     return seperator_object
+
+def matching_parentheses(string):
+    op= [] 
+    dc = { 
+        op.pop() if op else -1:i for i,c in enumerate(string) if 
+        (c=='(' and op.append(i) and False) or (c==')' and op)
+    }
+    return False if dc.get(-1) or op else dc
 
 def clean_artist(artist):
 
@@ -1217,6 +1286,22 @@ def test_album_names(artist_albums,value_to_check):
             return value_to_check
     return 
 
+def find_tags(string):
+    exit_list = []
+    tags = [w.split()[0] for w in string.split('@')[1:]]
+    hashtags = [w.split()[0] for w in string.split('#')[1:]]
+    
+    # using list comprehension to concat
+    res_list = [y for x in [tags, hashtags] for y in x]
+    
+    for result in res_list:
+        result =  re.sub("\s{0,}([^)\w\s]|_|\s{0,})+(?=\s|$)\s{0,}$", "", result, flags=re.IGNORECASE)
+        exit_list.append(result)
+    
+    if exit_list:
+        return exit_list
+    else:
+        return 
 
 
 RECORD_LABEL_RULES = [
@@ -1267,3 +1352,78 @@ def format_record_label(record_label):
     print("\n")
     return record_label
 
+def remove_quotes_from_string(youtube_video_full_title):
+    youtube_video_full_title = str(youtube_video_full_title).strip()
+
+    for match in re.finditer(r'(?i)\"(.+?)\"', youtube_video_full_title):
+        youtube_video_full_title = youtube_video_full_title[:match.start()] + " " + youtube_video_full_title[match.start() + 1:match.end()-1] + youtube_video_full_title[match.end():]
+
+    for match in re.finditer(r"(?i)\'(?:\b\w+\s{0,}){1}\'", youtube_video_full_title):
+        youtube_video_full_title = youtube_video_full_title[:match.start()] + " " + youtube_video_full_title[match.start() + 1:match.end()-1] + youtube_video_full_title[match.end():]
+
+    for match in re.finditer(r"(?i)\“(?:\b\w+\s{0,}){1}\”", youtube_video_full_title):
+        youtube_video_full_title = youtube_video_full_title[:match.start()] + " " + youtube_video_full_title[match.start() + 1:match.end()-1] + youtube_video_full_title[match.end():]
+
+    for match in re.finditer(r"(?i)\“\”", youtube_video_full_title):
+        youtube_video_full_title = youtube_video_full_title[:match.start()] + " " + youtube_video_full_title[match.start() + 1:match.end()-1] + youtube_video_full_title[match.end():]
+
+    youtube_video_full_title = convert_string(youtube_video_full_title)
+
+    return youtube_video_full_title
+
+FINAL_CLEANUP_LIST = [
+    r"\s{0,}\-\s{0,}(?=\])", # Clean up after dash
+    r"\s{0,}([^)\w\s]|_|\s{0,})+(?=\s|$)\s{0,}$", # Special Characters and Spaces at the end of String
+]
+
+def final_cleanup(youtube_video_full_title):
+    
+    for x in FINAL_CLEANUP_LIST:
+        youtube_video_full_title = re.sub(x, "", youtube_video_full_title, flags=re.IGNORECASE)
+    
+    return youtube_video_full_title
+
+def capitalize_words_correctly(youtube_full_title):
+    after_keywords=["ft."]
+    words = youtube_full_title.lower().split()
+    for key in after_keywords:
+        if key in words[1:]:
+            previous_word = words[words.index(key)-1]
+            if (len(previous_word) < 4):
+                for x in words:
+                    words[words.index(x)] = convert_string(words[words.index(x)])
+                words[words.index(key)-1] = previous_word.upper()  
+        
+    youtube_full_title =  ' '.join(words)
+    
+    before_keywords=["-"]
+    title_seperated = youtube_full_title.lower().split()
+    for key in before_keywords:
+        if key in title_seperated[1:]:
+            after_word = title_seperated[title_seperated.index(key)+1]
+            if (len(after_word) <= 4):
+                for x in title_seperated:
+                    try:
+                        if  title_seperated[title_seperated.index(key)+2] in after_keywords:
+                            title_seperated[title_seperated.index(key)+1] = after_word.upper()
+                    except IndexError:
+                        if title_seperated.index(x) == (len(title_seperated)-1):
+                            title_seperated[title_seperated.index(key)+1] = after_word.upper()
+                        
+          
+    youtube_full_title = ' '.join(title_seperated)
+
+    result = all([i.islower() for i in youtube_full_title.split()])
+
+    if result is False:
+        list_of_strings = youtube_full_title.split()
+        for i in list_of_strings:
+            test =re.search("\s{0,}[-]\s{0,}",i)
+            if test is None:
+                if list_of_strings[list_of_strings.index(i)].islower():
+                    if list_of_strings[list_of_strings.index(i)] is not Escape_Words:
+                        list_of_strings[list_of_strings.index(i)] = list_of_strings[list_of_strings.index(i)].capitalize()
+
+        youtube_full_title = ' '.join(list_of_strings)
+
+    return youtube_full_title
