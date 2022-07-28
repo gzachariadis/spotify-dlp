@@ -3,6 +3,7 @@ from ast import pattern
 from calendar import c
 from curses.ascii import islower
 import re
+from sys import flags
 from turtle import title
 import music_metadata_filter.functions as functions
 import pwd
@@ -13,6 +14,8 @@ import math
 from collections import Counter
 import operator
 import random
+import emoji
+import enchant
 
 YOUTUBE_TRACK_FILTER_RULES = [
     r"^\W+", # Remove special characters from the beginning of strings
@@ -239,6 +242,7 @@ GENRES_DICTIONARY = {
     "philippines-opm" : "Pop & Dance",
     "pagode" : "Brazilian Country-Folk",
     "happy" : "Indie Jazz",
+    "synthwave" : "Synthwave",
     "future bass" : "Electonic Dance Music",
     "dubstep" : "Dubstep",
     "complextro" : "Electro house",
@@ -420,7 +424,6 @@ CLEAN_BRACKETS = [
     r"(?i)\[{1,}\s{0,}\s{0,}\s{0,}Edit[e]{0,1}[d]{0,1}\s{1,}by[.]{0,1}\s{1,}.*\]{1,}",  # Edit(ed) By.
     r"(?i)\[{1,}\s{0,}(?:\w+\W+){1,5}\s{0,}Production[s]{0,1}\s{0,}\]{1,}$", # 1-5 words + Production(s)
     r"(?i)\[{1,}(?:Mash)?\s{0,}?\s{0,}(?:\d{1}[k]{1}\d{2}\s{0,}?\s{0,})?\s{0,}Mashup\s{0,}\s{0,}(?:\d{1}[k]{1}\d{2})?\s{0,}?\]{1,}",  # (2k15 MashUp) or (2k19 Mashup)
-    r"(?i)\[{1,}\s{0,}(?!VIP)(?!Original)(?:\w+){1}\s{0,}\]{1,}",  # A Single Word in Parenthesis not VIP    # (freestyle) # (YGK) if not (VIP)   # (Freeway) - A single word? ( KiingRod )
     r"(?i)\[{1,}\s{0,}(?:Visual)?\s{0,}\s{0,}(?:Meme)?\s{0,}\s{0,}(?:Intro)?\s{0,}\s{0,}Audio\s{0,}\]{1,}",   # (Visual Audio)
     r"(?i)\[{1,}\s{0,}(?:Exclusive)?\s{0,}\s{0,}(?:Meme)?\s{0,}\s{0,}(?:Slowed)?\s{0,}\s{0,}Video\s{0,}\]{1,}",
     r"(?i)\[{1,}\s{0,}(?:Slowed [+]{0,1})?\s{0,}\s{0,}Reverb\s{0,}\]{1,}", # (Slowed + Reverb)
@@ -548,8 +551,28 @@ CLEAN_BRACKETS = [
     r"(?i)\[{1,}\s{0,}Monstercat\s{0,}\]{1,}", # Monstercat
     r"(?i)\[{1,}s{0,}The\s{1,}Best\s{1,}of\s{1,}(?:\b\w+\s{0,}){1,5}\s{0,}\]{1,}", #  [The Best Of Armin Only Anthem]
     r"(?i)\[{1,}s{0,}Theme\s{1,}Song\s{0,}(?:\b\w+\s{0,}){1,5}\s{0,}\]{1,}", #[Theme Song From Kill Switch]
-    r"(?i)\[{1,}\s{0,}\W+\s{0,}tune\s{1,}(?:\b\w+\s{0,}){1,5}\s{0,}\]{1,}" # **tune of the Week
-
+    r"(?i)\[{1,}\s{0,}\W+\s{0,}tune\s{1,}(?:\b\w+\s{0,}){1,5}\s{0,}\]{1,}", # **tune of the Week
+    r"(?i)\[{1,}\s{0,}(?:\b\w+\s{0,}){1,3}Anthem\]{1,}", # Anthem
+    r"(?i)\[{1,}\s{0,}Synthwave\s{0,}\]{1,}", # Synthwave
+    r"(?i)\[{1,}\s{0,}Remastered\s{1,}(?:\b\w+\s{0,}){1,2}\s{0,}\]{1,}", #[Remastered in 4K]
+    r"(?i)\[{1,}\s{0,}.*/\s{0,1}O[f]{1,2}icial\s{1,}Video\s{0,}\]{1,}", # Words + Official Version
+    r"(?i)\[{1,}\s{0,}O[f]{1,2}icial\s{1,}\s{0,}?(?:Video)?\s{0,}\]{1,}", # Official Video
+    r"(?i)\[{1,}\s{0,}English\s{0,}?(?:Version)?\s{0,}\]{1,}", # English Version
+    r"(?i)\[{1,}A[c]{1,2}oustic\s{1,}Performance\s{0,}\]{1,}", # Accoustic Performance
+    r"(?i)\[{1,}\s{0,}(?:\b\w+\s{0,}){1}\s{0,}Exclusive\s{1,}-\s{1,}O[f]{1,}icial\s{0,}\]{1,}", # Exclusive Official
+    r"(?i)\[{1,}\s{0,}Vevo\s{1,}Presents\s{0,}\]{1,}",
+    r"(?i)\[{1,}\s{0,}Premiere\s{0,}\]{1,}",
+    r"(?i)\[{1,}\s{0,}Exclusive\s{0,}\]{1,}",
+    r"(?i)\[{1,}\s{0,}Electro\s{1,}Swing\s{1,}Cover\s{0,}\]{1,}",
+    r"(?i)\[{1,}\s{0,}Hip\s{1,}Hop\s{1,}Remix\s{0,}\]{1,}",
+    r"(?i)\[{1,}\s{0,}(?:\b\w+\s{0,}){1,3}[-]{1}\s{1,}Ten\s{1,}Year\s{1,}Tribute\s{0,}\]{1,}",
+    r"(?i)\[{1,}\s{0,}(?:\b\w+\s{0,}){1,3}\s{0,}Year\s{1,}Tribute\s{0,}\]{1,}",
+    r"(?i)\[{1,}\s{0,}by\s{1,}(?:\b\w+\s{0,}){1,4}\s{1,}Studios\s{0,}\]{1,}",
+    r"(?i)\[{1,}\s{0,}Vocaloid\s{0,}\]{1,}",
+    r"(?i)\[{1,}\s{0,}trap\s{0,}\]{1,}",
+    r"(?i)^\s{0,}\[{1,}\s{0,}.*\s{0,}\]{1,}",
+    r"(?i)\[{1,}\s{0,}(?:\b\w+\s{0,}){1,5}\s{1,}[-]{1}\s{0,}YTMAs\s{0,}\]{1,}",
+    r"(?i)\[{1,}\s{0,}\d{1,2}\/\d{1,}\s{0,}\]{1,}",
 ]   
 
 def clean_brackets(track):
@@ -637,9 +660,9 @@ def clean_extra_from_title(track):
     return track
 
 CLEAN_PARENTHESIS = [
-    r"(?i)[(]{1,}Official\s{0,}(?:Music)?\s{0,}Video[)]{1,}",
-    r"(?i)[(]{1,}Official\s{0,}(?:Music)?\s{0,}Visualizer[)]{1,}",
-    r"(?i)[(]{1,}(?:Music)?\s{0,}Visualizer[)]{1,}",
+    r"(?i)[(]{1,}Official\s{0,}(?:Music)?\s{0,}Video\s{0,}[)]{1,}",
+    r"(?i)[(]{1,}Official\s{0,}(?:Music)?\s{0,}Visualizer\s{0,}[)]{1,}",
+    r"(?i)[(]{1,}(?:Music)?\s{0,}Visualizer\s{0,}[)]{1,}",
     r"(?i)[(]{1,}(?:Audio)?\s{0,}?\s{0,}(?:With)?\s{0,}?\s{0,}Lyrics\s{0,}?\s{0,}(?:Included)?\s{0,}?\s{0,}[)]{1,}",    # Lyrics   # Audio with Lyrics     # Lyrics included  # With Lyrics
     r"(?i)[(]{1,}(?:Official)?\s{0,}?\s{0,}(?:)?\s{0,}?\s{0,}Lyrics\s{0,}?\s{0,}(?:Video)?\s{0,}?\s{0,}[)]{1,}",  # Official Lyrics Video
     r"(?i)[(]{1,}(?:Official)?\s{0,}?\s{0,}(?:)?\s{0,}?\s{0,}Lyric\s{0,}?\s{0,}(?:Video)?\s{0,}?\s{0,}[)]{1,}",   # Official Lyric Video
@@ -722,7 +745,6 @@ CLEAN_PARENTHESIS = [
     r"(?i)[(]{1,}\s{0,}\s{0,}\s{0,}Edit[e]{0,1}[d]{0,1}\s{1,}by[.]{0,1}\s{1,}.*[)]{1,}",  # Edit(ed) By.
     r"(?i)[(]{1,}\s{0,}(?:\w+\W+){1,5}\s{0,}Production[s]{0,1}\s{0,}[)]{1,}$", # 1-5 words + Production(s)
     r"(?i)[(]{1,}(?:Mash)?\s{0,}?\s{0,}(?:\d{1}[k]{1}\d{2}\s{0,}?\s{0,})?\s{0,}Mashup\s{0,}\s{0,}(?:\d{1}[k]{1}\d{2})?\s{0,}?[)]{1,}",  # (2k15 MashUp) or (2k19 Mashup)
-    r"(?i)[(]{1,}\s{0,}(?!VIP)(?!Original)(?:\w+){1}\s{0,}[)]{1,}",  # A Single Word in Parenthesis not VIP    # (freestyle) # (YGK) if not (VIP)   # (Freeway) - A single word? ( KiingRod )
     r"(?i)[(]{1,}\s{0,}(?:Visual)?\s{0,}\s{0,}(?:Meme)?\s{0,}\s{0,}(?:Intro)?\s{0,}\s{0,}Audio\s{0,}[)]{1,}",   # (Visual Audio)
     r"(?i)[(]{1,}\s{0,}(?:Exclusive)?\s{0,}\s{0,}(?:Meme)?\s{0,}\s{0,}(?:Slowed)?\s{0,}\s{0,}Video\s{0,}[)]{1,}",
     r"(?i)[(]{1,}\s{0,}(?:Slowed [+]{0,1})?\s{0,}\s{0,}Reverb\s{0,}[)]{1,}", # (Slowed + Reverb)
@@ -849,7 +871,56 @@ CLEAN_PARENTHESIS = [
     r"(?i)[(]{1,}\s{0,}Monstercat\s{0,}[)]{1,}", # Monstercat
     r"(?i)[(]{1,}\s{0,}The\s{1,}Best\s{1,}of\s{1,}(?:\b\w+\s{0,}){1,5}\s{0,}[)]{1,}", # (The Best Of Armin Only Anthem)
     r"(?i)[(]{1,}s{0,}Theme\s{1,}Song\s{0,}(?:\b\w+\s{0,}){1,5}\s{0,}[)]{1,}",  # Theme Song ...
-    r"(?i)[(]{1,}\s{0,}\W+\s{0,}tune\s{1,}(?:\b\w+\s{0,}){1,5}\s{0,}[)]{1,}" # (**tune of the Week)
+    r"(?i)[(]{1,}\s{0,}\W+\s{0,}tune\s{1,}(?:\b\w+\s{0,}){1,5}\s{0,}[)]{1,}", # (**tune of the Week)
+    r"(?i)[(]{1,}\s{0,}(?:\b\w+\s{0,}){1,3}Anthem[)]{1,}", #  (DLDK Amsterdam 2016 Anthem)
+    r"(?i)[(]{1,}\s{0,}Synthwave\s{0,}[)]{1,}", # Synthwave
+    r"(?i)[(]{1,}\s{0,}Remastered\s{1,}(?:\b\w+\s{0,}){1,2}\s{0,}[)]{1,}", # Remastered...
+    r"(?i)[(]{1,}\s{0,}.*/\s{0,1}O[f]{1,2}icial\s{1,}Video\s{0,}[)]{1,}", # /official video
+    r"(?i)[(]{1,}\s{0,}(?:\b\w+\s{0,}){1,3}\s{0,1}O[f]{1,2}icial\s{1,}Song\s{0,}[)]{1,}", # Official Song
+    r"(?i)[(]{1,}\s{0,}O[f]{1,2}icial\s{1,}\s{0,}?(?:Video)?\s{0,}[)]{1,}", # Official Video
+    r"(?i)[(]{1,}\s{0,}English\s{0,}?(?:Version)?\s{0,}[)]{1,}",
+    r"(?i)[(]{1,}Video\s{1,}O[f]{1,2}icial\s{0,}\[{1,}\s{0,}English\s{0,}?(?:Version)?\s{0,}\]{1,}\s{0,}[)]{1,}",  # Official English Version
+    r"(?i)[(]{1,}\s{0,}A[c]{1,2}oustic\s{1,}Performance\s{0,}[)]{1,}",  # Accoutstic Performance
+    r"(?i)[(]{1,}\s{0,}(?:\b\w+\s{0,}){1}\s{0,}Exclusive\s{1,}-\s{1,}O[f]{1,}icial\s{0,}[)]{1,}",  # Exclusive
+    r"(?i)[(]{1,}\s{0,}Vevo\s{1,}Presents\s{0,}[)]{1,}",  # Vevo Presents
+    r"(?i)[(]{1,}\s{0,}Live\W+\s{1,}1 Mic\s{1,}1 Take\s{0,}[)]{1,}",  # Live, 1 Mic 1 Take
+    r"(?i)[(]{1,}\s{0,}Exclusive\s{0,}[)]{1,}",  # Exclusive
+    r"(?i)[(]{1,}\s{0,}Premiere\s{0,}[)]{1,}"  # Premiere
+    r"(?i)[(]{1,}\s{0,}Electro\s{1,}Swing\s{1,}Cover\s{0,}[)]{1,}", # Electro Swing Cover
+    r"(?i)[(]{1,}\s{0,}Hip\s{1,}Hop\s{1,}Remix\s{0,}[)]{1,}",
+    r"(?i)[(]{1,}\s{0,}(?:\b\w+\s{0,}){1,3}\s{0,}Year\s{1,}Tribute\s{0,}[)]{1,}",
+    r"(?i)[(]{1,}\s{0,}by\s{1,}(?:\b\w+\s{0,}){1,4}\s{1,}Studios\s{0,}[)]{1,}",
+    r"(?i)[(]{1,}\s{0,}Vocaloid\s{0,}[)]{1,}",
+    r"(?i)[(]{1,}\s{0,}Stripped\s{0,}[)]{1,}",
+    r"(?i)[(]{1,}\s{0,}Beyond\s{1,}the\s{1,}lights\s{0,}[)]{1,}",
+    r"(?i)[(]{1,}\s{0,}Edm\s{1,}Remix\s{0,}[)]{1,}",
+    r"(?i)[(]{1,}\s{0,}Slowed\s{0,}[)]{1,}",
+    r"(?i)[(]{1,}\s{0,}Spotify\s{1,}Edit\s{0,}[)]{1,}",
+    r"(?i)[(]{1,}\s{0,}New\s{1,}Song\s{0,}[)]{1,}",
+    r"(?i)[(]{1,}\s{0,}Trap\s{1,}Remix\s{0,}[)]{1,}",
+    r"(?i)[(]{1,}\s{0,}Mass\s{1,}(?:\b\w+\s{0,}){1,3}Anthem\s{0,}[)]{1,}",
+    r"(?i)[(]{1,}\s{0,}Lofi\s{1,}(?:\b\w+\s{0,}){1,3}Beats\s{0,}[)]{1,}",
+    r"(?i)[(]{1,}\s{0,}(?:\b\w+\s{0,}){1,3}\s{0,}Records\s{0,}[)]{1,}",
+    r"(?i)[(]{1,}\s{0,}NCS\s{0,}[)]{1,}",
+    r"(?i)[(]{1,}\s{0,}Parental\s{1,}Advisory\s{0,}[)]{1,}",
+    r"(?i)[(]{1,}\s{0,}(?:\b\w+\s{0,}){1,2}Compilation\s{1,}Video\s{0,}[)]{1,}",
+    r"(?i)[(]{1,}\s{0,}Starring.*\s{0,}[)]{1,}",
+    r"(?i)[(]{1,}\s{0,}.*sub[+]Lyrics\s{0,}[)]{1,}",
+    r"(?i)[(]{1,}\s{0,}(?:\b\w+\s{0,}){1}Cut\s{0,}[)]{1,}",
+    r"(?i)[(]{1,}\s{0,}Free\s{0,}[)]{1,}",
+    r"(?i)[(]{1,}\s{0,}Deep\s{1,}House\s{0,}[)]{1,}",
+    r"(?i)[(]{1,}\s{0,}Inspired\s{1,}by\s{0,}(?:\b\w+\s{0,}){1,3}\s{0,}[)]{1,}",
+    r"(?i)[(]{1,}\s{0,}trap\s{0,}[)]{1,}",
+    r"(?i)\s{0,}[(]{1,}Acoustic\s{1,}Version\s{0,}[)]{1,}",
+    r"(?i)[(]{1,}\s{0,}Guest\s{1,}Mix[)]{1,}",
+    r"(?i)\s{0,}[(]{1,}Lyrics\s{1,}[-\/\]]{1,}\s{1,}Lyric\s{1,}Video\s{0,}[)]{1,}",
+    r"(?i)\s{0,}[(]{1,}Meme\s{1,}Song\s{0,}[)]{1,}",
+    r"(?i)[(]{1,}\s{0,}(?:\b\w+\s{0,}){1,5}[:]{0,1}\s{0,}The\s{1,}Album\s{0,}[)]{1,}",
+    r"(?i)[(]{1,}\s{0,}(?:\b\w+\s{0,}){1,5}\s{1,}[-]{1}\s{0,}YTMAs\s{0,}[)]{1,}",
+    r"(?i)[(]{1,}\s{0,}Online\s{1,}Version\s{0,}[)]{1,}",
+    r"(?i)[(]{1,}\s{0,}\d{1,2}\/\d{1,}\s{0,}[)]{1,}",
+    r"(?i)[(]{1,}\s{0,}Remix\s{0,}[-]{1}\s{0,}O[f]{1,}icial\s{1,}Visualizer\s{0,}[)]{1,}"
+
     # MOONBOY - ALIEN INVAZION (RIDDIM/DUBSTEP)
 
     # Shotgun Feat. (MagMag) - DJ BL3ND, Rettchit [Firepower Records - Dubstep]
@@ -860,6 +931,19 @@ CLEAN_PARENTHESIS = [
 
 def clean_unrequired_from_parenthesis(track):
     for regex in CLEAN_PARENTHESIS:
+        track = re.sub(regex, "", track, flags=re.IGNORECASE)
+        
+    # Remove Multiple Spaces
+    track = ' '.join(track.split())
+    
+    return track
+
+BRACKET_LIST = [
+    r"(?i)\s{0,}[{]{1,}Official\s{1,}Full\s{1,}Stream\s{0,}[}]{1,}"
+]
+
+def clean_unrequired_from_bracket(track):
+    for regex in BRACKET_LIST:
         track = re.sub(regex, "", track, flags=re.IGNORECASE)
         
     # Remove Multiple Spaces
@@ -886,11 +970,36 @@ STRIP_SPECIFIC_WORDS = [
     r"(?i)\s{1,}Video\s{1,}Ufficiale(\s{1,}|$)",
     r"(?i)\s{1,}Official\s{1,}Video(\s{1,}|$)",
     r"(?i)\s{1,}Spinnin[']{0,1}\s{1,}Records\s{1,}Anniversary(\s{1,}|$)",
-    r"(?i)\s{1,}Lyrics[.]{1,}(\s{1,}|$)"
+    r"(?i)\s{1,}Lyrics[.]{1,}(\s{1,}|$)",
+    r"(?i)\s{1,}Live\s{1,}at\s{1,}(?:\b\w+\s{0,}){1}\s{1,}\d{4}(\s{1,}|$)",
+    r"(?i)(^|\s{1,})Free\s{1,}Download($|\s)",
+    r"(?i)(^|\s{1,})Lyrics\W+($|\s)",
+    r"(?i)(^|\s{1,})Lyrics($|\s)",
+    r"(?i)(^|\s{1,})MV($|\s)",
+    r"(?i)(^|\s{1,})M/V($|\s)",
+    r"(?i)(^|\s{1,})O[f]{1,}icial\s{1,}Soundtrack($|\s)",
+    r"(?i)(^|\s{1,})\W+Spanish\s{1,}Version($|\s)",
+    r"(?i)(^|\s{1,})O[f]{1,2}icial\s{1,}Soundtrack($|\s)",
+    r"(?i)(^|\s{1,})Lyric\s{1,}Video($|\s)",
+    r"(?i)(^|\s{1,})on\s{1,}Spotify($|\s{1,})",
+    r"(?i)(^|\s{1,})on\s{1,}Spotify\s{1,}&\s{1,}Apple($|\s{1,})",
+    r"(?i)(^|\s{1,})HD($|\s{1,})",
+    r"(?i)(?=\s{1,}|^)by\s{1,}(?:\b\w+\s{0,}){1,4}\s{1,}Studios(?=\s{1,}|$)"
+
 ]
 
 artist_track_seperators = [
-    r"(?<=[a-zA-Z])-(?=[a-zA-Z]{2,})"  
+    r"(?<=[a-zA-Z])-(?=[a-zA-Z]{2,})",
+]
+
+track_seperators = [
+    r"(?<=[a-zA-Z])-(?=[\s]{1,})",
+    r"(?<=[\s])-(?=[a-zA-Z]{2,})"
+]
+
+replace_the_seperators = [
+    r"(?<=[\s])[|]{1}(?=[\s])",
+    r"(?<=[\s])[/]{1}(?=[\s])"
 ]
 
 word_seperators = [
@@ -899,6 +1008,32 @@ word_seperators = [
     r"(?<=[a-zA-Z])//(?=[a-zA-Z]{2,})",
     r"(?<=[a-zA-Z])/(?=[a-zA-Z]{2,})",  
 ]
+
+def spaces_for_seperator(string):
+    dashes = string.count("-")
+    matches = get_all_integers_between_square_brackets(string,artist_track_seperators)
+
+    if dashes == 1 and matches:
+         string = string[0:int(matches[-1])] + " - " + string[int(matches[-1])+1:]
+
+    # Remove Multiple Spaces
+    string = ' '.join(string.split())
+
+    return string
+
+def replace_seperators(string,list_check):
+    matches = get_all_integers_between_square_brackets(string,list_check)
+    quotes = string.count("-")
+    if quotes == 0 and matches:
+       string = string[0:int(matches[-1])] + " - " + string[int(matches[-1])+1:]
+    
+    pattern = re.compile(r"(?i)(^|\s{1,})--($|\s{1,})")
+    string = re.sub(pattern," - ", string)
+
+    # Remove Multiple Spaces
+    string = ' '.join(string.split())
+
+    return string
 
 def get_all_integers_between_square_brackets(string,list_to_check):
     matches = []
@@ -920,13 +1055,19 @@ def seperate_backslash_words(track):
 
 def ade_seperate_track_artist(full_title):
     matches = get_all_integers_between_square_brackets(full_title,artist_track_seperators)
-
-    if len(matches) > 0:
-        for index in matches:
-            full_title = full_title[0:int(index)] + " - " + full_title[int(index)+1:]
+    quotes = full_title.count("-")
+    p = re.compile(r'(?<=[\s])-(?=[\s])')
+    seperator = bool(re.search(p,full_title))
+    matches_v2 = get_all_integers_between_square_brackets(full_title,track_seperators)
+   
+    if len(matches) > 0 and quotes > 1 and seperator is False:
+        full_title = full_title[0:int(matches[-1])] + " - " + full_title[int(matches[-1])+1:]
+    
+    if matches_v2:
+        for item in matches_v2:
+            full_title = full_title[0:int(item)] + " - " + full_title[int(item)+1:]
     
     full_title = convert_string(full_title)            
-
     return full_title
 
 def strip_specific_words(track):
@@ -943,7 +1084,6 @@ MISC_LIST = [
 
 ]
 
-
 def remove_miscellaneous(track):
 
     if track.find("-") != -1:
@@ -954,7 +1094,7 @@ def remove_miscellaneous(track):
         track = re.sub(regex,"",track, flags=re.IGNORECASE)
     return track
 
-Escape_Words = ["the","and","are","is","was","were","by","of","no","so","with","be","to","a","be","ft.","n","v","vs","us","me"]
+Escape_Words = ["the","and","are","is","was","were","by","of","no","so","with","be","to","a","be","ft.","n","v","vs","us","me","my","up"]
 
 def clean_track_for_extraction(my_str):
     my_str = re.sub("(?=[a-zA-Z])Audio(?=[a-zA-Z])", " ",my_str, flags=re.IGNORECASE)
@@ -1081,31 +1221,35 @@ def convert_string(my_str):
 
 # Remove Emoji's From track
 def deEmojify(track):
-    regrex_pattern = re.compile(pattern = "["
+    regrex_pattern =  re.compile("["
         u"\U0001F600-\U0001F64F"  # emoticons
         u"\U0001F300-\U0001F5FF"  # symbols & pictographs
         u"\U0001F680-\U0001F6FF"  # transport & map symbols
         u"\U0001F1E0-\U0001F1FF"  # flags (iOS)
-        u"\U0001F600-\U0001F64F"  # emoticons
-        u"\U0001F300-\U0001F5FF"  # symbols & pictographs
-        u"\U0001F680-\U0001F6FF"  # transport & map symbols
-        u"\U0001F1E0-\U0001F1FF"  # flags (iOS)
-        u"\U00002500-\U00002BEF"  # chinese char
-        u"\U00002702-\U000027B0"
-        u"\U00002702-\U000027B0"
-        u"\U000024C2-\U0001F251"
-        u"\U0001f926-\U0001f937"
-        u"\U00010000-\U0010ffff"
-        u"\u2640-\u2642"
-        u"\u2600-\u2B55"
-        u"\u200d"
-        u"\u23cf"
-        u"\u23e9"
-        u"\u231a"
-        u"\ufe0f"  # dingbats
-        u"\u3030"
-                           "]+", flags = re.UNICODE)
+                           "]+", flags=re.UNICODE)
     return regrex_pattern.sub(r'',track)
+
+def remove_emoji(track):
+    emoji_rx = r"[#*0-9]\uFE0F?\u20E3|©\uFE0F?|[®\u203C\u2049\u2122\u2139\u2194-\u2199\u21A9\u21AA]\uFE0F?|[\u231A\u231B]|[\u2328\u23CF]\uFE0F?|[\u23E9-\u23EC]|[\u23ED-\u23EF]\uFE0F?|\u23F0|[\u23F1\u23F2]\uFE0F?|\u23F3|[\u23F8-\u23FA\u24C2\u25AA\u25AB\u25B6\u25C0\u25FB\u25FC]\uFE0F?|[\u25FD\u25FE]|[\u2600-\u2604\u260E\u2611]\uFE0F?|[\u2614\u2615]|\u2618\uFE0F?|\u261D[\uFE0F\U0001F3FB-\U0001F3FF]?|[\u2620\u2622\u2623\u2626\u262A\u262E\u262F\u2638-\u263A\u2640\u2642]\uFE0F?|[\u2648-\u2653]|[\u265F\u2660\u2663\u2665\u2666\u2668\u267B\u267E]\uFE0F?|\u267F|\u2692\uFE0F?|\u2693|[\u2694-\u2697\u2699\u269B\u269C\u26A0]\uFE0F?|\u26A1|\u26A7\uFE0F?|[\u26AA\u26AB]|[\u26B0\u26B1]\uFE0F?|[\u26BD\u26BE\u26C4\u26C5]|\u26C8\uFE0F?|\u26CE|[\u26CF\u26D1\u26D3]\uFE0F?|\u26D4|\u26E9\uFE0F?|\u26EA|[\u26F0\u26F1]\uFE0F?|[\u26F2\u26F3]|\u26F4\uFE0F?|\u26F5|[\u26F7\u26F8]\uFE0F?|\u26F9(?:\u200D[\u2640\u2642]\uFE0F?|[\uFE0F\U0001F3FB-\U0001F3FF](?:\u200D[\u2640\u2642]\uFE0F?)?)?|[\u26FA\u26FD]|\u2702\uFE0F?|\u2705|[\u2708\u2709]\uFE0F?|[\u270A\u270B][\U0001F3FB-\U0001F3FF]?|[\u270C\u270D][\uFE0F\U0001F3FB-\U0001F3FF]?|\u270F\uFE0F?|[\u2712\u2714\u2716\u271D\u2721]\uFE0F?|\u2728|[\u2733\u2734\u2744\u2747]\uFE0F?|[\u274C\u274E\u2753-\u2755\u2757]|\u2763\uFE0F?|\u2764(?:\u200D[\U0001F525\U0001FA79]|\uFE0F(?:\u200D[\U0001F525\U0001FA79])?)?|[\u2795-\u2797]|\u27A1\uFE0F?|[\u27B0\u27BF]|[\u2934\u2935\u2B05-\u2B07]\uFE0F?|[\u2B1B\u2B1C\u2B50\u2B55]|[\u3030\u303D\u3297\u3299]\uFE0F?|[\U0001F004\U0001F0CF]|[\U0001F170\U0001F171\U0001F17E\U0001F17F]\uFE0F?|[\U0001F18E\U0001F191-\U0001F19A]|\U0001F1E6[\U0001F1E8-\U0001F1EC\U0001F1EE\U0001F1F1\U0001F1F2\U0001F1F4\U0001F1F6-\U0001F1FA\U0001F1FC\U0001F1FD\U0001F1FF]|\U0001F1E7[\U0001F1E6\U0001F1E7\U0001F1E9-\U0001F1EF\U0001F1F1-\U0001F1F4\U0001F1F6-\U0001F1F9\U0001F1FB\U0001F1FC\U0001F1FE\U0001F1FF]|\U0001F1E8[\U0001F1E6\U0001F1E8\U0001F1E9\U0001F1EB-\U0001F1EE\U0001F1F0-\U0001F1F5\U0001F1F7\U0001F1FA-\U0001F1FF]|\U0001F1E9[\U0001F1EA\U0001F1EC\U0001F1EF\U0001F1F0\U0001F1F2\U0001F1F4\U0001F1FF]|\U0001F1EA[\U0001F1E6\U0001F1E8\U0001F1EA\U0001F1EC\U0001F1ED\U0001F1F7-\U0001F1FA]|\U0001F1EB[\U0001F1EE-\U0001F1F0\U0001F1F2\U0001F1F4\U0001F1F7]|\U0001F1EC[\U0001F1E6\U0001F1E7\U0001F1E9-\U0001F1EE\U0001F1F1-\U0001F1F3\U0001F1F5-\U0001F1FA\U0001F1FC\U0001F1FE]|\U0001F1ED[\U0001F1F0\U0001F1F2\U0001F1F3\U0001F1F7\U0001F1F9\U0001F1FA]|\U0001F1EE[\U0001F1E8-\U0001F1EA\U0001F1F1-\U0001F1F4\U0001F1F6-\U0001F1F9]|\U0001F1EF[\U0001F1EA\U0001F1F2\U0001F1F4\U0001F1F5]|\U0001F1F0[\U0001F1EA\U0001F1EC-\U0001F1EE\U0001F1F2\U0001F1F3\U0001F1F5\U0001F1F7\U0001F1FC\U0001F1FE\U0001F1FF]|\U0001F1F1[\U0001F1E6-\U0001F1E8\U0001F1EE\U0001F1F0\U0001F1F7-\U0001F1FB\U0001F1FE]|\U0001F1F2[\U0001F1E6\U0001F1E8-\U0001F1ED\U0001F1F0-\U0001F1FF]|\U0001F1F3[\U0001F1E6\U0001F1E8\U0001F1EA-\U0001F1EC\U0001F1EE\U0001F1F1\U0001F1F4\U0001F1F5\U0001F1F7\U0001F1FA\U0001F1FF]|\U0001F1F4\U0001F1F2|\U0001F1F5[\U0001F1E6\U0001F1EA-\U0001F1ED\U0001F1F0-\U0001F1F3\U0001F1F7-\U0001F1F9\U0001F1FC\U0001F1FE]|\U0001F1F6\U0001F1E6|\U0001F1F7[\U0001F1EA\U0001F1F4\U0001F1F8\U0001F1FA\U0001F1FC]|\U0001F1F8[\U0001F1E6-\U0001F1EA\U0001F1EC-\U0001F1F4\U0001F1F7-\U0001F1F9\U0001F1FB\U0001F1FD-\U0001F1FF]|\U0001F1F9[\U0001F1E6\U0001F1E8\U0001F1E9\U0001F1EB-\U0001F1ED\U0001F1EF-\U0001F1F4\U0001F1F7\U0001F1F9\U0001F1FB\U0001F1FC\U0001F1FF]|\U0001F1FA[\U0001F1E6\U0001F1EC\U0001F1F2\U0001F1F3\U0001F1F8\U0001F1FE\U0001F1FF]|\U0001F1FB[\U0001F1E6\U0001F1E8\U0001F1EA\U0001F1EC\U0001F1EE\U0001F1F3\U0001F1FA]|\U0001F1FC[\U0001F1EB\U0001F1F8]|\U0001F1FD\U0001F1F0|\U0001F1FE[\U0001F1EA\U0001F1F9]|\U0001F1FF[\U0001F1E6\U0001F1F2\U0001F1FC]|\U0001F201|\U0001F202\uFE0F?|[\U0001F21A\U0001F22F\U0001F232-\U0001F236]|\U0001F237\uFE0F?|[\U0001F238-\U0001F23A\U0001F250\U0001F251\U0001F300-\U0001F320]|[\U0001F321\U0001F324-\U0001F32C]\uFE0F?|[\U0001F32D-\U0001F335]|\U0001F336\uFE0F?|[\U0001F337-\U0001F37C]|\U0001F37D\uFE0F?|[\U0001F37E-\U0001F384]|\U0001F385[\U0001F3FB-\U0001F3FF]?|[\U0001F386-\U0001F393]|[\U0001F396\U0001F397\U0001F399-\U0001F39B\U0001F39E\U0001F39F]\uFE0F?|[\U0001F3A0-\U0001F3C1]|\U0001F3C2[\U0001F3FB-\U0001F3FF]?|[\U0001F3C3\U0001F3C4](?:\u200D[\u2640\u2642]\uFE0F?|[\U0001F3FB-\U0001F3FF](?:\u200D[\u2640\u2642]\uFE0F?)?)?|[\U0001F3C5\U0001F3C6]|\U0001F3C7[\U0001F3FB-\U0001F3FF]?|[\U0001F3C8\U0001F3C9]|\U0001F3CA(?:\u200D[\u2640\u2642]\uFE0F?|[\U0001F3FB-\U0001F3FF](?:\u200D[\u2640\u2642]\uFE0F?)?)?|[\U0001F3CB\U0001F3CC](?:\u200D[\u2640\u2642]\uFE0F?|[\uFE0F\U0001F3FB-\U0001F3FF](?:\u200D[\u2640\u2642]\uFE0F?)?)?|[\U0001F3CD\U0001F3CE]\uFE0F?|[\U0001F3CF-\U0001F3D3]|[\U0001F3D4-\U0001F3DF]\uFE0F?|[\U0001F3E0-\U0001F3F0]|\U0001F3F3(?:\u200D(?:\u26A7\uFE0F?|\U0001F308)|\uFE0F(?:\u200D(?:\u26A7\uFE0F?|\U0001F308))?)?|\U0001F3F4(?:\u200D\u2620\uFE0F?|\U000E0067\U000E0062(?:\U000E0065\U000E006E\U000E0067|\U000E0073\U000E0063\U000E0074|\U000E0077\U000E006C\U000E0073)\U000E007F)?|[\U0001F3F5\U0001F3F7]\uFE0F?|[\U0001F3F8-\U0001F407]|\U0001F408(?:\u200D\u2B1B)?|[\U0001F409-\U0001F414]|\U0001F415(?:\u200D\U0001F9BA)?|[\U0001F416-\U0001F43A]|\U0001F43B(?:\u200D\u2744\uFE0F?)?|[\U0001F43C-\U0001F43E]|\U0001F43F\uFE0F?|\U0001F440|\U0001F441(?:\u200D\U0001F5E8\uFE0F?|\uFE0F(?:\u200D\U0001F5E8\uFE0F?)?)?|[\U0001F442\U0001F443][\U0001F3FB-\U0001F3FF]?|[\U0001F444\U0001F445]|[\U0001F446-\U0001F450][\U0001F3FB-\U0001F3FF]?|[\U0001F451-\U0001F465]|[\U0001F466\U0001F467][\U0001F3FB-\U0001F3FF]?|\U0001F468(?:\u200D(?:[\u2695\u2696\u2708]\uFE0F?|\u2764\uFE0F?\u200D(?:\U0001F48B\u200D)?\U0001F468|[\U0001F33E\U0001F373\U0001F37C\U0001F393\U0001F3A4\U0001F3A8\U0001F3EB\U0001F3ED]|\U0001F466(?:\u200D\U0001F466)?|\U0001F467(?:\u200D[\U0001F466\U0001F467])?|[\U0001F468\U0001F469]\u200D(?:\U0001F466(?:\u200D\U0001F466)?|\U0001F467(?:\u200D[\U0001F466\U0001F467])?)|[\U0001F4BB\U0001F4BC\U0001F527\U0001F52C\U0001F680\U0001F692\U0001F9AF-\U0001F9B3\U0001F9BC\U0001F9BD])|\U0001F3FB(?:\u200D(?:[\u2695\u2696\u2708]\uFE0F?|\u2764\uFE0F?\u200D(?:\U0001F48B\u200D)?\U0001F468[\U0001F3FB-\U0001F3FF]|[\U0001F33E\U0001F373\U0001F37C\U0001F393\U0001F3A4\U0001F3A8\U0001F3EB\U0001F3ED\U0001F4BB\U0001F4BC\U0001F527\U0001F52C\U0001F680\U0001F692]|\U0001F91D\u200D\U0001F468[\U0001F3FC-\U0001F3FF]|[\U0001F9AF-\U0001F9B3\U0001F9BC\U0001F9BD]))?|\U0001F3FC(?:\u200D(?:[\u2695\u2696\u2708]\uFE0F?|\u2764\uFE0F?\u200D(?:\U0001F48B\u200D)?\U0001F468[\U0001F3FB-\U0001F3FF]|[\U0001F33E\U0001F373\U0001F37C\U0001F393\U0001F3A4\U0001F3A8\U0001F3EB\U0001F3ED\U0001F4BB\U0001F4BC\U0001F527\U0001F52C\U0001F680\U0001F692]|\U0001F91D\u200D\U0001F468[\U0001F3FB\U0001F3FD-\U0001F3FF]|[\U0001F9AF-\U0001F9B3\U0001F9BC\U0001F9BD]))?|\U0001F3FD(?:\u200D(?:[\u2695\u2696\u2708]\uFE0F?|\u2764\uFE0F?\u200D(?:\U0001F48B\u200D)?\U0001F468[\U0001F3FB-\U0001F3FF]|[\U0001F33E\U0001F373\U0001F37C\U0001F393\U0001F3A4\U0001F3A8\U0001F3EB\U0001F3ED\U0001F4BB\U0001F4BC\U0001F527\U0001F52C\U0001F680\U0001F692]|\U0001F91D\u200D\U0001F468[\U0001F3FB\U0001F3FC\U0001F3FE\U0001F3FF]|[\U0001F9AF-\U0001F9B3\U0001F9BC\U0001F9BD]))?|\U0001F3FE(?:\u200D(?:[\u2695\u2696\u2708]\uFE0F?|\u2764\uFE0F?\u200D(?:\U0001F48B\u200D)?\U0001F468[\U0001F3FB-\U0001F3FF]|[\U0001F33E\U0001F373\U0001F37C\U0001F393\U0001F3A4\U0001F3A8\U0001F3EB\U0001F3ED\U0001F4BB\U0001F4BC\U0001F527\U0001F52C\U0001F680\U0001F692]|\U0001F91D\u200D\U0001F468[\U0001F3FB-\U0001F3FD\U0001F3FF]|[\U0001F9AF-\U0001F9B3\U0001F9BC\U0001F9BD]))?|\U0001F3FF(?:\u200D(?:[\u2695\u2696\u2708]\uFE0F?|\u2764\uFE0F?\u200D(?:\U0001F48B\u200D)?\U0001F468[\U0001F3FB-\U0001F3FF]|[\U0001F33E\U0001F373\U0001F37C\U0001F393\U0001F3A4\U0001F3A8\U0001F3EB\U0001F3ED\U0001F4BB\U0001F4BC\U0001F527\U0001F52C\U0001F680\U0001F692]|\U0001F91D\u200D\U0001F468[\U0001F3FB-\U0001F3FE]|[\U0001F9AF-\U0001F9B3\U0001F9BC\U0001F9BD]))?)?|\U0001F469(?:\u200D(?:[\u2695\u2696\u2708]\uFE0F?|\u2764\uFE0F?\u200D(?:\U0001F48B\u200D)?[\U0001F468\U0001F469]|[\U0001F33E\U0001F373\U0001F37C\U0001F393\U0001F3A4\U0001F3A8\U0001F3EB\U0001F3ED]|\U0001F466(?:\u200D\U0001F466)?|\U0001F467(?:\u200D[\U0001F466\U0001F467])?|\U0001F469\u200D(?:\U0001F466(?:\u200D\U0001F466)?|\U0001F467(?:\u200D[\U0001F466\U0001F467])?)|[\U0001F4BB\U0001F4BC\U0001F527\U0001F52C\U0001F680\U0001F692\U0001F9AF-\U0001F9B3\U0001F9BC\U0001F9BD])|\U0001F3FB(?:\u200D(?:[\u2695\u2696\u2708]\uFE0F?|\u2764\uFE0F?\u200D(?:[\U0001F468\U0001F469][\U0001F3FB-\U0001F3FF]|\U0001F48B\u200D[\U0001F468\U0001F469][\U0001F3FB-\U0001F3FF])|[\U0001F33E\U0001F373\U0001F37C\U0001F393\U0001F3A4\U0001F3A8\U0001F3EB\U0001F3ED\U0001F4BB\U0001F4BC\U0001F527\U0001F52C\U0001F680\U0001F692]|\U0001F91D\u200D[\U0001F468\U0001F469][\U0001F3FC-\U0001F3FF]|[\U0001F9AF-\U0001F9B3\U0001F9BC\U0001F9BD]))?|\U0001F3FC(?:\u200D(?:[\u2695\u2696\u2708]\uFE0F?|\u2764\uFE0F?\u200D(?:[\U0001F468\U0001F469][\U0001F3FB-\U0001F3FF]|\U0001F48B\u200D[\U0001F468\U0001F469][\U0001F3FB-\U0001F3FF])|[\U0001F33E\U0001F373\U0001F37C\U0001F393\U0001F3A4\U0001F3A8\U0001F3EB\U0001F3ED\U0001F4BB\U0001F4BC\U0001F527\U0001F52C\U0001F680\U0001F692]|\U0001F91D\u200D[\U0001F468\U0001F469][\U0001F3FB\U0001F3FD-\U0001F3FF]|[\U0001F9AF-\U0001F9B3\U0001F9BC\U0001F9BD]))?|\U0001F3FD(?:\u200D(?:[\u2695\u2696\u2708]\uFE0F?|\u2764\uFE0F?\u200D(?:[\U0001F468\U0001F469][\U0001F3FB-\U0001F3FF]|\U0001F48B\u200D[\U0001F468\U0001F469][\U0001F3FB-\U0001F3FF])|[\U0001F33E\U0001F373\U0001F37C\U0001F393\U0001F3A4\U0001F3A8\U0001F3EB\U0001F3ED\U0001F4BB\U0001F4BC\U0001F527\U0001F52C\U0001F680\U0001F692]|\U0001F91D\u200D[\U0001F468\U0001F469][\U0001F3FB\U0001F3FC\U0001F3FE\U0001F3FF]|[\U0001F9AF-\U0001F9B3\U0001F9BC\U0001F9BD]))?|\U0001F3FE(?:\u200D(?:[\u2695\u2696\u2708]\uFE0F?|\u2764\uFE0F?\u200D(?:[\U0001F468\U0001F469][\U0001F3FB-\U0001F3FF]|\U0001F48B\u200D[\U0001F468\U0001F469][\U0001F3FB-\U0001F3FF])|[\U0001F33E\U0001F373\U0001F37C\U0001F393\U0001F3A4\U0001F3A8\U0001F3EB\U0001F3ED\U0001F4BB\U0001F4BC\U0001F527\U0001F52C\U0001F680\U0001F692]|\U0001F91D\u200D[\U0001F468\U0001F469][\U0001F3FB-\U0001F3FD\U0001F3FF]|[\U0001F9AF-\U0001F9B3\U0001F9BC\U0001F9BD]))?|\U0001F3FF(?:\u200D(?:[\u2695\u2696\u2708]\uFE0F?|\u2764\uFE0F?\u200D(?:[\U0001F468\U0001F469][\U0001F3FB-\U0001F3FF]|\U0001F48B\u200D[\U0001F468\U0001F469][\U0001F3FB-\U0001F3FF])|[\U0001F33E\U0001F373\U0001F37C\U0001F393\U0001F3A4\U0001F3A8\U0001F3EB\U0001F3ED\U0001F4BB\U0001F4BC\U0001F527\U0001F52C\U0001F680\U0001F692]|\U0001F91D\u200D[\U0001F468\U0001F469][\U0001F3FB-\U0001F3FE]|[\U0001F9AF-\U0001F9B3\U0001F9BC\U0001F9BD]))?)?|\U0001F46A|[\U0001F46B-\U0001F46D][\U0001F3FB-\U0001F3FF]?|\U0001F46E(?:\u200D[\u2640\u2642]\uFE0F?|[\U0001F3FB-\U0001F3FF](?:\u200D[\u2640\u2642]\uFE0F?)?)?|\U0001F46F(?:\u200D[\u2640\u2642]\uFE0F?)?|[\U0001F470\U0001F471](?:\u200D[\u2640\u2642]\uFE0F?|[\U0001F3FB-\U0001F3FF](?:\u200D[\u2640\u2642]\uFE0F?)?)?|\U0001F472[\U0001F3FB-\U0001F3FF]?|\U0001F473(?:\u200D[\u2640\u2642]\uFE0F?|[\U0001F3FB-\U0001F3FF](?:\u200D[\u2640\u2642]\uFE0F?)?)?|[\U0001F474-\U0001F476][\U0001F3FB-\U0001F3FF]?|\U0001F477(?:\u200D[\u2640\u2642]\uFE0F?|[\U0001F3FB-\U0001F3FF](?:\u200D[\u2640\u2642]\uFE0F?)?)?|\U0001F478[\U0001F3FB-\U0001F3FF]?|[\U0001F479-\U0001F47B]|\U0001F47C[\U0001F3FB-\U0001F3FF]?|[\U0001F47D-\U0001F480]|[\U0001F481\U0001F482](?:\u200D[\u2640\u2642]\uFE0F?|[\U0001F3FB-\U0001F3FF](?:\u200D[\u2640\u2642]\uFE0F?)?)?|\U0001F483[\U0001F3FB-\U0001F3FF]?|\U0001F484|\U0001F485[\U0001F3FB-\U0001F3FF]?|[\U0001F486\U0001F487](?:\u200D[\u2640\u2642]\uFE0F?|[\U0001F3FB-\U0001F3FF](?:\u200D[\u2640\u2642]\uFE0F?)?)?|[\U0001F488-\U0001F48E]|\U0001F48F[\U0001F3FB-\U0001F3FF]?|\U0001F490|\U0001F491[\U0001F3FB-\U0001F3FF]?|[\U0001F492-\U0001F4A9]|\U0001F4AA[\U0001F3FB-\U0001F3FF]?|[\U0001F4AB-\U0001F4FC]|\U0001F4FD\uFE0F?|[\U0001F4FF-\U0001F53D]|[\U0001F549\U0001F54A]\uFE0F?|[\U0001F54B-\U0001F54E\U0001F550-\U0001F567]|[\U0001F56F\U0001F570\U0001F573]\uFE0F?|\U0001F574[\uFE0F\U0001F3FB-\U0001F3FF]?|\U0001F575(?:\u200D[\u2640\u2642]\uFE0F?|[\uFE0F\U0001F3FB-\U0001F3FF](?:\u200D[\u2640\u2642]\uFE0F?)?)?|[\U0001F576-\U0001F579]\uFE0F?|\U0001F57A[\U0001F3FB-\U0001F3FF]?|[\U0001F587\U0001F58A-\U0001F58D]\uFE0F?|\U0001F590[\uFE0F\U0001F3FB-\U0001F3FF]?|[\U0001F595\U0001F596][\U0001F3FB-\U0001F3FF]?|\U0001F5A4|[\U0001F5A5\U0001F5A8\U0001F5B1\U0001F5B2\U0001F5BC\U0001F5C2-\U0001F5C4\U0001F5D1-\U0001F5D3\U0001F5DC-\U0001F5DE\U0001F5E1\U0001F5E3\U0001F5E8\U0001F5EF\U0001F5F3\U0001F5FA]\uFE0F?|[\U0001F5FB-\U0001F62D]|\U0001F62E(?:\u200D\U0001F4A8)?|[\U0001F62F-\U0001F634]|\U0001F635(?:\u200D\U0001F4AB)?|\U0001F636(?:\u200D\U0001F32B\uFE0F?)?|[\U0001F637-\U0001F644]|[\U0001F645-\U0001F647](?:\u200D[\u2640\u2642]\uFE0F?|[\U0001F3FB-\U0001F3FF](?:\u200D[\u2640\u2642]\uFE0F?)?)?|[\U0001F648-\U0001F64A]|\U0001F64B(?:\u200D[\u2640\u2642]\uFE0F?|[\U0001F3FB-\U0001F3FF](?:\u200D[\u2640\u2642]\uFE0F?)?)?|\U0001F64C[\U0001F3FB-\U0001F3FF]?|[\U0001F64D\U0001F64E](?:\u200D[\u2640\u2642]\uFE0F?|[\U0001F3FB-\U0001F3FF](?:\u200D[\u2640\u2642]\uFE0F?)?)?|\U0001F64F[\U0001F3FB-\U0001F3FF]?|[\U0001F680-\U0001F6A2]|\U0001F6A3(?:\u200D[\u2640\u2642]\uFE0F?|[\U0001F3FB-\U0001F3FF](?:\u200D[\u2640\u2642]\uFE0F?)?)?|[\U0001F6A4-\U0001F6B3]|[\U0001F6B4-\U0001F6B6](?:\u200D[\u2640\u2642]\uFE0F?|[\U0001F3FB-\U0001F3FF](?:\u200D[\u2640\u2642]\uFE0F?)?)?|[\U0001F6B7-\U0001F6BF]|\U0001F6C0[\U0001F3FB-\U0001F3FF]?|[\U0001F6C1-\U0001F6C5]|\U0001F6CB\uFE0F?|\U0001F6CC[\U0001F3FB-\U0001F3FF]?|[\U0001F6CD-\U0001F6CF]\uFE0F?|[\U0001F6D0-\U0001F6D2\U0001F6D5-\U0001F6D7\U0001F6DD-\U0001F6DF]|[\U0001F6E0-\U0001F6E5\U0001F6E9]\uFE0F?|[\U0001F6EB\U0001F6EC]|[\U0001F6F0\U0001F6F3]\uFE0F?|[\U0001F6F4-\U0001F6FC\U0001F7E0-\U0001F7EB\U0001F7F0]|\U0001F90C[\U0001F3FB-\U0001F3FF]?|[\U0001F90D\U0001F90E]|\U0001F90F[\U0001F3FB-\U0001F3FF]?|[\U0001F910-\U0001F917]|[\U0001F918-\U0001F91F][\U0001F3FB-\U0001F3FF]?|[\U0001F920-\U0001F925]|\U0001F926(?:\u200D[\u2640\u2642]\uFE0F?|[\U0001F3FB-\U0001F3FF](?:\u200D[\u2640\u2642]\uFE0F?)?)?|[\U0001F927-\U0001F92F]|[\U0001F930-\U0001F934][\U0001F3FB-\U0001F3FF]?|\U0001F935(?:\u200D[\u2640\u2642]\uFE0F?|[\U0001F3FB-\U0001F3FF](?:\u200D[\u2640\u2642]\uFE0F?)?)?|\U0001F936[\U0001F3FB-\U0001F3FF]?|[\U0001F937-\U0001F939](?:\u200D[\u2640\u2642]\uFE0F?|[\U0001F3FB-\U0001F3FF](?:\u200D[\u2640\u2642]\uFE0F?)?)?|\U0001F93A|\U0001F93C(?:\u200D[\u2640\u2642]\uFE0F?)?|[\U0001F93D\U0001F93E](?:\u200D[\u2640\u2642]\uFE0F?|[\U0001F3FB-\U0001F3FF](?:\u200D[\u2640\u2642]\uFE0F?)?)?|[\U0001F93F-\U0001F945\U0001F947-\U0001F976]|\U0001F977[\U0001F3FB-\U0001F3FF]?|[\U0001F978-\U0001F9B4]|[\U0001F9B5\U0001F9B6][\U0001F3FB-\U0001F3FF]?|\U0001F9B7|[\U0001F9B8\U0001F9B9](?:\u200D[\u2640\u2642]\uFE0F?|[\U0001F3FB-\U0001F3FF](?:\u200D[\u2640\u2642]\uFE0F?)?)?|\U0001F9BA|\U0001F9BB[\U0001F3FB-\U0001F3FF]?|[\U0001F9BC-\U0001F9CC]|[\U0001F9CD-\U0001F9CF](?:\u200D[\u2640\u2642]\uFE0F?|[\U0001F3FB-\U0001F3FF](?:\u200D[\u2640\u2642]\uFE0F?)?)?|\U0001F9D0|\U0001F9D1(?:\u200D(?:[\u2695\u2696\u2708]\uFE0F?|[\U0001F33E\U0001F373\U0001F37C\U0001F384\U0001F393\U0001F3A4\U0001F3A8\U0001F3EB\U0001F3ED\U0001F4BB\U0001F4BC\U0001F527\U0001F52C\U0001F680\U0001F692]|\U0001F91D\u200D\U0001F9D1|[\U0001F9AF-\U0001F9B3\U0001F9BC\U0001F9BD])|\U0001F3FB(?:\u200D(?:[\u2695\u2696\u2708]\uFE0F?|\u2764\uFE0F?\u200D(?:\U0001F48B\u200D|)\U0001F9D1[\U0001F3FC-\U0001F3FF]|[\U0001F33E\U0001F373\U0001F37C\U0001F384\U0001F393\U0001F3A4\U0001F3A8\U0001F3EB\U0001F3ED\U0001F4BB\U0001F4BC\U0001F527\U0001F52C\U0001F680\U0001F692]|\U0001F91D\u200D\U0001F9D1[\U0001F3FB-\U0001F3FF]|[\U0001F9AF-\U0001F9B3\U0001F9BC\U0001F9BD]))?|\U0001F3FC(?:\u200D(?:[\u2695\u2696\u2708]\uFE0F?|\u2764\uFE0F?\u200D(?:\U0001F48B\u200D|)\U0001F9D1[\U0001F3FB\U0001F3FD-\U0001F3FF]|[\U0001F33E\U0001F373\U0001F37C\U0001F384\U0001F393\U0001F3A4\U0001F3A8\U0001F3EB\U0001F3ED\U0001F4BB\U0001F4BC\U0001F527\U0001F52C\U0001F680\U0001F692]|\U0001F91D\u200D\U0001F9D1[\U0001F3FB-\U0001F3FF]|[\U0001F9AF-\U0001F9B3\U0001F9BC\U0001F9BD]))?|\U0001F3FD(?:\u200D(?:[\u2695\u2696\u2708]\uFE0F?|\u2764\uFE0F?\u200D(?:\U0001F48B\u200D|)\U0001F9D1[\U0001F3FB\U0001F3FC\U0001F3FE\U0001F3FF]|[\U0001F33E\U0001F373\U0001F37C\U0001F384\U0001F393\U0001F3A4\U0001F3A8\U0001F3EB\U0001F3ED\U0001F4BB\U0001F4BC\U0001F527\U0001F52C\U0001F680\U0001F692]|\U0001F91D\u200D\U0001F9D1[\U0001F3FB-\U0001F3FF]|[\U0001F9AF-\U0001F9B3\U0001F9BC\U0001F9BD]))?|\U0001F3FE(?:\u200D(?:[\u2695\u2696\u2708]\uFE0F?|\u2764\uFE0F?\u200D(?:\U0001F48B\u200D|)\U0001F9D1[\U0001F3FB-\U0001F3FD\U0001F3FF]|[\U0001F33E\U0001F373\U0001F37C\U0001F384\U0001F393\U0001F3A4\U0001F3A8\U0001F3EB\U0001F3ED\U0001F4BB\U0001F4BC\U0001F527\U0001F52C\U0001F680\U0001F692]|\U0001F91D\u200D\U0001F9D1[\U0001F3FB-\U0001F3FF]|[\U0001F9AF-\U0001F9B3\U0001F9BC\U0001F9BD]))?|\U0001F3FF(?:\u200D(?:[\u2695\u2696\u2708]\uFE0F?|\u2764\uFE0F?\u200D(?:\U0001F48B\u200D|)\U0001F9D1[\U0001F3FB-\U0001F3FE]|[\U0001F33E\U0001F373\U0001F37C\U0001F384\U0001F393\U0001F3A4\U0001F3A8\U0001F3EB\U0001F3ED\U0001F4BB\U0001F4BC\U0001F527\U0001F52C\U0001F680\U0001F692]|\U0001F91D\u200D\U0001F9D1[\U0001F3FB-\U0001F3FF]|[\U0001F9AF-\U0001F9B3\U0001F9BC\U0001F9BD]))?)?|[\U0001F9D2\U0001F9D3][\U0001F3FB-\U0001F3FF]?|\U0001F9D4(?:\u200D[\u2640\u2642]\uFE0F?|[\U0001F3FB-\U0001F3FF](?:\u200D[\u2640\u2642]\uFE0F?)?)?|\U0001F9D5[\U0001F3FB-\U0001F3FF]?|[\U0001F9D6-\U0001F9DD](?:\u200D[\u2640\u2642]\uFE0F?|[\U0001F3FB-\U0001F3FF](?:\u200D[\u2640\u2642]\uFE0F?)?)?|[\U0001F9DE\U0001F9DF](?:\u200D[\u2640\u2642]\uFE0F?)?|[\U0001F9E0-\U0001F9FF\U0001FA70-\U0001FA74\U0001FA78-\U0001FA7C\U0001FA80-\U0001FA86\U0001FA90-\U0001FAAC\U0001FAB0-\U0001FABA\U0001FAC0-\U0001FAC2]|[\U0001FAC3-\U0001FAC5][\U0001F3FB-\U0001F3FF]?|[\U0001FAD0-\U0001FAD9\U0001FAE0-\U0001FAE7]|\U0001FAF0[\U0001F3FB-\U0001F3FF]?|\U0001FAF1(?:\U0001F3FB(?:\u200D\U0001FAF2[\U0001F3FC-\U0001F3FF])?|\U0001F3FC(?:\u200D\U0001FAF2[\U0001F3FB\U0001F3FD-\U0001F3FF])?|\U0001F3FD(?:\u200D\U0001FAF2[\U0001F3FB\U0001F3FC\U0001F3FE\U0001F3FF])?|\U0001F3FE(?:\u200D\U0001FAF2[\U0001F3FB-\U0001F3FD\U0001F3FF])?|\U0001F3FF(?:\u200D\U0001FAF2[\U0001F3FB-\U0001F3FE])?)?|[\U0001FAF2-\U0001FAF6][\U0001F3FB-\U0001F3FF]?"
+    extract_emoji = re.compile(emoji_rx)                   # Match a single emoji
+    extract_emoji_chunks = re.compile(f'(?:{emoji_rx})+')  # Match one or more emojis
+    extract_5_emoji_string = re.compile(f'^(?:{emoji_rx}){{5}}$')  # Match string of 5 emojis
+    
+    track = re.sub(extract_emoji,"",track)
+    track = re.sub(extract_emoji_chunks,"",track)
+    track = re.sub(extract_5_emoji_string,"",track)
+    
+    return track 
+
+def remove_chinese(track):
+    return ''.join(filter(lambda character:ord(character) < 0x3000,track))
+
+def remove_emojis(text: str) -> str:
+    return ''.join(c for c in text if c not in emoji.UNICODE_EMOJI)
+
+def remove_emojis_v2(string):
+    return emoji.get_emoji_regexp().sub(u'', string)
+
 
 def filter_with_filter_rules(text):
     for regex in YOUTUBE_TRACK_FILTER_RULES:
@@ -1375,29 +1519,50 @@ def format_record_label(record_label):
     print("\n")
     return record_label
 
+REMOVE_QUOTES_LIST =[ 
+    r'(?i)\"(.+?)\"',
+    r"(?i)\'(?:\b\w+\s{0,}){1}\'",
+    r"(?i)\“(?:\b\w+\s{0,}){1}\”",
+    r"(?i)\“\”",
+    r'(?=\b.*\b)(?=\').(?![^\s$])',
+    r'\s{1,}(?=\').(?=\b.*\b)',
+    r"(?!\b.*\b)\‘(?!\b.*\b)"
+]
+
 def remove_quotes_from_string(youtube_video_full_title):
     youtube_video_full_title = str(youtube_video_full_title).strip()
 
-    for match in re.finditer(r'(?i)\"(.+?)\"', youtube_video_full_title):
-        youtube_video_full_title = youtube_video_full_title[:match.start()] + " " + youtube_video_full_title[match.start() + 1:match.end()-1] + youtube_video_full_title[match.end():]
-
-    for match in re.finditer(r"(?i)\'(?:\b\w+\s{0,}){1}\'", youtube_video_full_title):
-        youtube_video_full_title = youtube_video_full_title[:match.start()] + " " + youtube_video_full_title[match.start() + 1:match.end()-1] + youtube_video_full_title[match.end():]
-
-    for match in re.finditer(r"(?i)\“(?:\b\w+\s{0,}){1}\”", youtube_video_full_title):
-        youtube_video_full_title = youtube_video_full_title[:match.start()] + " " + youtube_video_full_title[match.start() + 1:match.end()-1] + youtube_video_full_title[match.end():]
-
-    for match in re.finditer(r"(?i)\“\”", youtube_video_full_title):
-        youtube_video_full_title = youtube_video_full_title[:match.start()] + " " + youtube_video_full_title[match.start() + 1:match.end()-1] + youtube_video_full_title[match.end():]
+    for quote_pattern in REMOVE_QUOTES_LIST:
+        pattern = re.compile(quote_pattern)
+        for match in re.finditer(pattern, youtube_video_full_title):
+            youtube_video_full_title = youtube_video_full_title[:match.start()] + " " + youtube_video_full_title[match.start() + 1:match.end()-1] + youtube_video_full_title[match.end():]
 
     youtube_video_full_title = convert_string(youtube_video_full_title)
 
     return youtube_video_full_title
 
+def second_parenthesis(youtube_video_full_title):
+    if (youtube_video_full_title.find(')') != -1):
+        all_string_parenthesis = matching_parentheses(youtube_video_full_title)
+    
+        if all_string_parenthesis:
+            if (len(all_string_parenthesis.keys()) > 1):
+                keys=list(sorted(all_string_parenthesis.keys()))  #get list of keys from dictionary
+                keys.pop(0)  #Remove first in list of keys
+                for key in keys:
+                    no_delete =  re.search(r"(?i)^((?!Remix|Mix|feat|featuring|Feat[.]{1}|ft[.]{1}).)*$",youtube_video_full_title, re.IGNORECASE)
+                    if no_delete is not None:
+                        youtube_video_full_title = youtube_video_full_title[:key-1] + youtube_video_full_title[all_string_parenthesis[key]+1:]
+        
+    return youtube_video_full_title
+
 FINAL_CLEANUP_LIST = [
     r"\s{0,}\-\s{0,}(?=\])", # Clean up after dash
     r"\s{0,}([^)\']\w\s]|_|\s{0,})+(?=\s|$)\s{0,}$", # Special Characters and Spaces at the end of String
-    r"^\W+"
+    r"^\W+",
+    r"[\[$&+,:;=?@#|'<>.^*(%\"\£_!-]{1,}$",
+    r"(?<!\w)'(?!\w+)",
+    r"[\%\/\\\&\?\,\'\;\:\!\-\:\)]{2,}"
 ]
 
 def final_cleanup(youtube_video_full_title):
@@ -1407,19 +1572,34 @@ def final_cleanup(youtube_video_full_title):
     
     return youtube_video_full_title
 
+DOT_REGEXES = [
+    r"(([a-zA-Z]\.){3,})",
+    r"\b\w{1}[.]{1}\w{1}(?=\s|$)"
+]
+
+def capitalize_words_with_dots(youtube_full_title):
+    for regex in DOT_REGEXES:
+        pattern = re.compile(regex)
+        for match in re.finditer(pattern, youtube_full_title):
+            youtube_full_title = youtube_full_title[:match.start()] + str(youtube_full_title[match.start():match.end()]).upper() + youtube_full_title[match.end():]
+
+    return youtube_full_title
+
 def capitalize_words_correctly(youtube_full_title):
+    d = enchant.Dict("en_US")
     after_keywords=["ft."]
     words = youtube_full_title.lower().split()
     for key in after_keywords:
         if key in words[1:]:
             previous_word = words[words.index(key)-1]
-            if (len(previous_word) < 4):
+            if (len(previous_word) <= 4):
                 for x in words:
                     words[words.index(x)] = convert_string(words[words.index(x)])
-                words[words.index(key)-1] = previous_word.upper()  
+                if d.check(previous_word) is False:
+                    words[words.index(key)-1] = previous_word.upper()  
         
     youtube_full_title =  ' '.join(words)
-    
+
     before_keywords=["-"]
     title_seperated = youtube_full_title.lower().split()
     for key in before_keywords:
@@ -1429,12 +1609,13 @@ def capitalize_words_correctly(youtube_full_title):
                 for x in title_seperated:
                     try:
                         if  title_seperated[title_seperated.index(key)+2] in after_keywords:
-                            title_seperated[title_seperated.index(key)+1] = after_word.upper()
+                            if d.check(after_word) is False:
+                                title_seperated[title_seperated.index(key)+1] = after_word.upper()
                     except IndexError:
                         if title_seperated.index(x) == (len(title_seperated)-1):
-                            title_seperated[title_seperated.index(key)+1] = after_word.upper()
+                            if d.check(after_word) is False:
+                                title_seperated[title_seperated.index(key)+1] = after_word.upper()
                         
-          
     youtube_full_title = ' '.join(title_seperated)
 
     result = all([i.islower() for i in youtube_full_title.split()])
@@ -1442,12 +1623,27 @@ def capitalize_words_correctly(youtube_full_title):
     if result is False:
         list_of_strings = youtube_full_title.split()
         for i in list_of_strings:
-            test =re.search("\s{0,}[-]\s{0,}",i)
+            test = re.search("\s{0,}[-]\s{0,}",i)
             if test is None:
                 if list_of_strings[list_of_strings.index(i)].islower():
                     if list_of_strings[list_of_strings.index(i)] is not Escape_Words:
-                        list_of_strings[list_of_strings.index(i)] = list_of_strings[list_of_strings.index(i)].capitalize()
+                        if d.check(list_of_strings[list_of_strings.index(i)]) is True:
+                            list_of_strings[list_of_strings.index(i)] = list_of_strings[list_of_strings.index(i)].capitalize()
 
         youtube_full_title = ' '.join(list_of_strings)
+
+    return youtube_full_title
+
+def smiley_cleaner(youtube_full_title):
+    # approach 1: pattern for "generic smiley"
+    pattern1 = re.compile(r"(?i)\s{1,}[:;7BX=]{1}[-~'\^]{0,1}[)(\/\|DP]{1}\b(?=\s{1,}|$)")
+
+    # approach 2: disjunction of a list of smileys
+    smileys = """:-) :) :o) :] :3 :c) :> =] 8) =) :} :^) 
+                :D 8-D 8D x-D xD X-D XD =-D =D =-3 =3 B^D""".split()
+    pattern2 = "|".join(map(re.escape, smileys))
+
+    youtube_full_title = re.sub(pattern1,"",youtube_full_title)
+    youtube_full_title = re.sub(pattern2,"",youtube_full_title)
 
     return youtube_full_title

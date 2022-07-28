@@ -27,7 +27,7 @@ def spotify_authentication():
         print("Spotify Authentication Failed...")
         return 
 
-def did_i_identify_artist_correctly(artist):
+def search_exact_artist_match(artist):
     spotify = spotify_authentication()
 
     resulting_artists = []
@@ -42,8 +42,7 @@ def did_i_identify_artist_correctly(artist):
         search_results = spotify.search(str(artist).strip(),limit=5,offset=0,type="artist")
         time.sleep(2.0)       
         resulting_artists.extend(search_results['artists']['items'])
-        print("Error Searching Artist on Spotify....")
-
+        
     artists_found = find_values("name",json.dumps(resulting_artists))
 
     if artist.strip() in artists_found:
@@ -52,7 +51,6 @@ def did_i_identify_artist_correctly(artist):
         for i in artists_found:
             if i.lower() == artist.lower():
                 return str(convert_string(artist)).strip()
-    print("Done")
     return 
 
 def search_tracks_to_find_artist(youtube_title,track):
