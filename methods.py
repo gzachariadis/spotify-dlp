@@ -919,8 +919,11 @@ CLEAN_PARENTHESIS = [
     r"(?i)[(]{1,}\s{0,}(?:\b\w+\s{0,}){1,5}\s{1,}[-]{1}\s{0,}YTMAs\s{0,}[)]{1,}",
     r"(?i)[(]{1,}\s{0,}Online\s{1,}Version\s{0,}[)]{1,}",
     r"(?i)[(]{1,}\s{0,}\d{1,2}\/\d{1,}\s{0,}[)]{1,}",
-    r"(?i)[(]{1,}\s{0,}Remix\s{0,}[-]{1}\s{0,}O[f]{1,}icial\s{1,}Visualizer\s{0,}[)]{1,}"
-
+    r"(?i)[(]{1,}\s{0,}Remix\s{0,}[-]{1}\s{0,}O[f]{1,}icial\s{1,}Visualizer\s{0,}[)]{1,}",
+    r"(?i)[(]{1,}\s{0,}(?:\b\w+\s{0,}){1}\s{1,}(?:\b\w+\s{0,}){1}'s\s{1,}Video\s{0,}[)]{1,}",
+    r"(?i)[(]{1,}\s{0,}O[f]{1,}icial\s{1,}Lyrics\/\s{0,}(?:\b\w+\s{0,}){1}\s{0,}[)]{1,}",
+    r"(?i)[(]{1,}\s{0,}O[f]{1,}icial\s{1,}Teaser\s{1,}Clip\s{0,}[)]{1,}",
+    r"(?i)[(]{1,}\s{0,}Exclusive\s{1,}Premiere\s{0,}[)]{1,}",
     # MOONBOY - ALIEN INVAZION (RIDDIM/DUBSTEP)
 
     # Shotgun Feat. (MagMag) - DJ BL3ND, Rettchit [Firepower Records - Dubstep]
@@ -984,7 +987,9 @@ STRIP_SPECIFIC_WORDS = [
     r"(?i)(^|\s{1,})on\s{1,}Spotify($|\s{1,})",
     r"(?i)(^|\s{1,})on\s{1,}Spotify\s{1,}&\s{1,}Apple($|\s{1,})",
     r"(?i)(^|\s{1,})HD($|\s{1,})",
-    r"(?i)(?=\s{1,}|^)by\s{1,}(?:\b\w+\s{0,}){1,4}\s{1,}Studios(?=\s{1,}|$)"
+    r"(?i)(?=\s{1,}|^)by\s{1,}(?:\b\w+\s{0,}){1,4}\s{1,}Studios(?=\s{1,}|$)",
+    r"(?i)\s{1,}\d{4}\s{1,}Video\s{1,}Edit(?=\s{1,}|\W+)",
+    r"(?i)\s{1,}\d{1}[k]{1}\d{2}\s{1,}Video\s{1,}Edit(?=\s{1,}|\W+)"
 
 ]
 
@@ -1068,6 +1073,7 @@ def ade_seperate_track_artist(full_title):
             full_title = full_title[0:int(item)] + " - " + full_title[int(item)+1:]
     
     full_title = convert_string(full_title)            
+    
     return full_title
 
 def strip_specific_words(track):
@@ -1094,7 +1100,7 @@ def remove_miscellaneous(track):
         track = re.sub(regex,"",track, flags=re.IGNORECASE)
     return track
 
-Escape_Words = ["the","and","are","is","was","were","by","of","no","so","with","be","to","a","be","ft.","n","v","vs","us","me","my","up"]
+Escape_Words = ["the","and","are","is","was","were","by","of","no","so","with","be","to","a","be","ft.","n","v","vs","us","me","my","up","ok"]
 
 def clean_track_for_extraction(my_str):
     my_str = re.sub("(?=[a-zA-Z])Audio(?=[a-zA-Z])", " ",my_str, flags=re.IGNORECASE)
@@ -1265,31 +1271,53 @@ def filter_with_filter_rules(text):
 
     return text
 
+def external_clean(track):
+
+    # Apply External Track Filters for Title
+    track = functions.remove_remastered(track)
+
+    track = functions.remove_version(track)
+    
+    track = functions.youtube(track)
+    
+    track = functions.fix_track_suffix(track)
+    
+    track = functions.remove_live(track)
+    
+    track = functions.remove_zero_width(track)
+    
+    track = functions.remove_clean_explicit(track)
+    
+    track = functions.remove_reissue(track)
+    
+    track = functions.remove_parody(track)
+    
+    track = functions.remove_feature(track)
+    
+    track = functions.remove_zero_width(track)
+    
+    track = functions.replace_nbsp(track)
+    
+    track = functions.remove_clean_explicit(track)
+    
+    track = functions.remove_live(track)
+    
+    track = functions.remove_reissue(track)
+    
+    track = functions.remove_remastered(track)
+    
+    track = functions.remove_parody(track)
+    
+    track = functions.remove_version(track)
+
+    return track
+
 # Clean the Title of a Song
 def clean_track(track):
 
     track = filter_with_filter_rules(track)
 
-    # Apply External Track Filters for Title
-    track = functions.remove_remastered(track)
-    track = functions.remove_version(track)
-    track = functions.youtube(track)
-    track = functions.fix_track_suffix(track)
-    track = functions.remove_live(track)
-    track = functions.remove_zero_width(track)
-    track = functions.remove_clean_explicit(track)
-    track = functions.remove_reissue(track)
-    track = functions.remove_parody(track)
-    track = functions.remove_feature(track)
-    track = functions.remove_zero_width(track)
-    track = functions.replace_nbsp(track)
-    track = functions.remove_clean_explicit(track)
-    track = functions.remove_live(track)
-    track = functions.remove_reissue(track)
-    track = functions.remove_remastered(track)
-    track = functions.remove_parody(track)
-    track = functions.remove_version(track)
-    
+  
     # Remove special characters from end and start of words
     track_words = track.split()
     for word in track_words:
@@ -1313,14 +1341,6 @@ def clean_track(track):
 
     # Remove Non-English Characters - Mainly chinese
     track = ''.join(filter(lambda character:ord(character) < 0x3000,track))
-
-    # Remove anything within double quotes  - requires fixing
-    track = re.sub('".*?"', '', track)
-
-    track = track.replace("~", "")
-
-    # Remove Emojies
-    track = deEmojify(track)
 
     # Remove multiple spaces in artist and title
     track = " ".join(track.split())
@@ -1562,6 +1582,7 @@ FINAL_CLEANUP_LIST = [
     r"^\W+",
     r"[\[$&+,:;=?@#|'<>.^*(%\"\£_!-]{1,}$",
     r"(?<!\w)'(?!\w+)",
+    r"’$",
     r"[\%\/\\\&\?\,\'\;\:\!\-\:\)]{2,}"
 ]
 
@@ -1647,3 +1668,56 @@ def smiley_cleaner(youtube_full_title):
     youtube_full_title = re.sub(pattern2,"",youtube_full_title)
 
     return youtube_full_title
+
+def fix_seperated_words(youtube_full_title):
+    pattern = re.compile(r"\b\w{1}(?:(?: \s\w{1})+|(?:\s\w{1})+)\b")
+
+    matches = re.finditer(pattern, youtube_full_title)
+    for match in matches:
+        the_word = re.sub(r"\s{1,}","",youtube_full_title[match.start():match.end()].capitalize())
+        youtube_full_title = youtube_full_title[:match.start()] + the_word + " " + youtube_full_title[match.end():]
+
+    pattern_v2 = re.compile(r"\b\w{1}(?:(?:\s{1,}·\s\w{1})+|(?:\s\w{1})+)\b")
+    matches_v2 = re.finditer(pattern_v2, youtube_full_title)
+
+    for match in matches_v2:
+        the_new_word = re.sub(r"\s{1,}·\s","",youtube_full_title[match.start():match.end()].capitalize())
+        youtube_full_title = youtube_full_title[:match.start()] + the_new_word + " " + youtube_full_title[match.end():]
+
+    return youtube_full_title
+
+
+def fix_full_parenthesis(youtube_full_title):
+    pattern = re.compile(r"-\s{1,}[(].*[)]{1,}$")
+
+    matches = re.finditer(pattern, youtube_full_title)
+    for match in matches:
+        youtube_full_title = youtube_full_title[:match.start()+2] + youtube_full_title[match.start()+3:match.end()-1]
+        return youtube_full_title
+
+    pattern_v2 = re.compile(r"-[(].*[)]{1,}$")
+
+    matches_v2 = re.finditer(pattern_v2, youtube_full_title)
+    for match in matches_v2:
+
+        youtube_full_title = youtube_full_title[:match.start()] + " - " + youtube_full_title[match.start()+2:match.end()-1]
+
+    return youtube_full_title
+
+
+patterns_list = [ 
+    r"(?i)\bRemix\W+",
+    r"(?i)\bEdit\W+",
+    r"(?i)\bMix\W+",
+    r"(?i)[(]{1,}\s{0,}\bVip\W+\s{0,}[)]{1,}"
+    
+]
+
+def identify_song_type(title_extracted_track):
+    for x in patterns_list:
+        pattern = re.compile(x)
+        result = bool(re.search(pattern,final_cleanup(title_extracted_track)))
+        if result is True:
+            return True
+    return False
+    

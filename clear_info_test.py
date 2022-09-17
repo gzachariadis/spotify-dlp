@@ -59,35 +59,28 @@ youtube_video_full_title = spaces_for_seperator(youtube_video_full_title)
 
 youtube_video_full_title = capitalize_words_with_dots(youtube_video_full_title)
 
+youtube_video_full_title = fix_seperated_words(youtube_video_full_title)
+
+youtube_video_full_title = fix_full_parenthesis(youtube_video_full_title)
+
 youtube_video_full_title = re.sub(r"\s{2,}", " ", youtube_video_full_title)
 
 print(youtube_video_full_title)
 print("\n")
 
+
 """
 if no special characters with spaces then try first word as artist, if correct add a dash after it.
 if no special characters and first word no artist try first two. 
 
-(?i)(?:\b\w+\s{0,}){1}[:]{1,}\s{1,}
-Twenty one Pilots: Stressed Out
-
-Bigbang - (Fxxk It)
 Omri - idk wts
+
+
+
+
 
 Blue (Da Ba Dee) - Dv7)
 
-Sam Feldt - Post Malone (feat. RANI) [GATTÜSO Remix] (Official Music Video)
-Sam Feldt - Post Malone (Feat. Rani) [gattüso Remix
-Alok & Dynoro - On & On (Official Teaser Clip)
-Major Lazer, J Balvin - Que Calor (Official Lyrics/ Letra) (feat. El Alfa)
-Alan Walker, K-391, Tungevaag, Mangoo - Play (Alan Walker's Video)
-Mako - Our Story [exclusive Premiere]
-Dj Antoine - Bella Vita (Dj Antoine Vs. Mad Mark 2k13 Video Edit)
-
-Afrojack, Spree Wilson - the Spark ft. Spree Wilson
-the Spark ft. Spree Wilson
-
-Kygo - Stole the Show Feat. Parson James [
 """
 
 # Find all seperator objects
@@ -100,17 +93,23 @@ the_seperator_index = find_correct_seperator_index(the_seperator_object)
 title_extracted_track, title_extracted_artist = youtube_video_full_title[the_seperator_index:], youtube_video_full_title[:the_seperator_index]
 
 # Clean the artist and title to begin spotify searches
-artist = title_extracted_artist
+artist = clean_artist(title_extracted_artist)
 track = final_cleanup(title_extracted_track)
 
-print("Video title suggests artist is {}".format(artist))
-# Search Spotify for Artist with that name
-artist = search_exact_artist_match(artist)
+print(external_clean(track))
 
-# If you can't identify Artist - Song then try Song - Artist
-if artist is None:
-    artist = search_exact_artist_match(track)
+# Search for Remixes by the extracted Artist
+if track.find("(") != -1:
 
-print("\n")   
-print(artist)
-print("\n")
+    if identify_song_type(track) is True:
+        print("Processing Track as a Remix....")
+        print("\n")
+        spotify_track_dict_info = search_track_by_youtube_video_title(track,artist)
+        if spotify_track_dict_info is None:
+            spotify_track_dict_info = search_track_by_youtube_video_title(external_clean(track),artist)
+            print(spotify_track_dict_info)
+        else:
+            print(spotify_track_dict_info)
+
+
+

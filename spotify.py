@@ -187,7 +187,6 @@ def search_track_by_youtube_video_title(track,artist):
     spotify = spotify_authentication()
 
     # Seach the first 1000 results for artist + track combo
-    print("Acquiring Tracks....")
     for offset in range(0, 1000, 50):
         results = spotify.search(q='artist:' + artist.strip() + ' track:' + str(track).strip(),limit=50,offset=offset,type = 'track')
         for each_track in results["tracks"]["items"]:
@@ -196,7 +195,7 @@ def search_track_by_youtube_video_title(track,artist):
                 # if track artist matches the artist found previously, give me all their matching records
                 search_results[each_track['id']] = each_track['name'], each_track['artists'][0]['name']
     
-    print("Searching for {}....".format(track).strip())
+    print("Searching for {0} by {1}....".format(track,artist).strip())
     # if artist matches the artist I am looking for, look at results
     for key,value in search_results.items():
         # check if a song by the artist matches closely the title
@@ -208,13 +207,15 @@ def search_track_by_youtube_video_title(track,artist):
     
     # if you find exactly one song matching return song
     if len(song.keys()) == 1:
-        print("Song Identified...")
+        print("Validated song as {0} by {1}...".format(str(track).strip(),str(artist)).strip())
+        print("\n")
         return song
 
     # if you find multiple matches return all of them
     if len(song.keys()) > 1:
-        print("Found {} exact song matches in Spotify Database....".format(len(song.keys())))
-        return song    
+        print("Validated song as {0} by {1}...".format(str(list(song.values())[0]).strip(),str(artist)).strip())
+        print("\n")
+        return {"{}".format(list(song.keys())[0]) : ["{}".format(list(song.values())[0]),"{}".format(artist)]}  
 
     # if you don't find an exact match
     if(len(song.keys())) == 0:
@@ -222,7 +223,7 @@ def search_track_by_youtube_video_title(track,artist):
         # search Spoitfy again, but this time only for song that match artist name
         for key,value in search_results.items():
             # check if a song by the artist matches closely the title
-            check_song = math.trunc(similar(str(value).lower().strip(),str(track).lower().strip()))
+            check_song = math.trunc(similar(str(value[0]).lower().strip(),str(track).lower().strip()))
 
             # if matches more than 70 
             if int(check_song) > int(70):
@@ -231,17 +232,17 @@ def search_track_by_youtube_video_title(track,artist):
 
     # if you find exactly one closely matching track, return it
     if len(closely_matching.keys()) == 0:
+        print("No close variations found...")
         return
     
     elif len(closely_matching.keys()) >= 1:
         print("Found {} closely matching tracks in the Spotify Database...".format(len(closely_matching.keys())))
         for key, value in closely_matching.items():
-
             is_this_your_track = pyip.inputYesNo(prompt=(str("is \"{0}\" by {1} the correct track? [y/n] ".format(value[0],value[1]))),strip=True,default="yes",blank=True)
-            
             if not is_this_your_track or (str(is_this_your_track).lower() == "yes"):
                 song[key] = value[0], value[1]
-                print("Validated song as {0} by {1}. Proceeding...".format(str(value[0]).strip(),str(artist)).strip())
+                print("Validated song as {0} by {1}...".format(str(value[0]).strip(),str(artist)).strip())
+                print("\n")
                 return song
             elif str(is_this_your_track).lower() == "no":
                 continue
@@ -251,7 +252,7 @@ def search_track_by_youtube_video_title(track,artist):
 def search_track_with_cleaned_title(track,artist):
     # Initiate two objects one for songs matching the artist and one for the final result
     search_results = {}
-    song = {}
+    songs = {}
 
     # Authenticate token with spotify
     spotify = spotify_authentication()
@@ -270,11 +271,12 @@ def search_track_with_cleaned_title(track,artist):
 
         # check if a song by the artist matches closely the title
         check_song = math.trunc(similar(str(value).lower().strip(),str(track).lower().strip()))
-    
-        if int(check_song) == int(100):
-            song[key] = value
-            return song
 
+        # if song match exists
+        if int(check_song) == int(100):
+            songs[key] = value, artist    
+   
+    return songs
 
 def get_artist_id(artist):
     spotify = spotify_authentication()
